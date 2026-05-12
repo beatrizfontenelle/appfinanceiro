@@ -80,7 +80,7 @@ function renderCarteira() {
   document.getElementById('inv-tb').innerHTML = inv.map(i => {
     const v = i.amount || i.balance || 0, pp = tot > 0 ? (v / tot * 100).toFixed(1) + '%' : '—';
     const bpv = bprice(i.code);
-    const pSrc = bpv != null ? `${R(bpv)} <span style="font-size:9px;color:var(--g)">yahoo</span>` : (i.value != null ? `${R(i.value)} <span style="font-size:9px;color:var(--muted)">pluggy</span>` : '—');
+    const pSrc = bpv != null ? `${R(bpv)} <span style="font-size:9px;color:var(--g)">mkt</span>` : (i.value != null ? `${R(i.value)} <span style="font-size:9px;color:var(--muted)">pluggy</span>` : '—');
     let rent = '—';
     if (i.lastMonthRate != null) rent = `<span class="${i.lastMonthRate >= 0 ? 'pos' : 'neg'}">${Pct(i.lastMonthRate)} 1m</span>`;
     else if (i.annualRate != null) rent = `<span>${Pct(i.annualRate)} a.a.</span>`;

@@ -6,7 +6,7 @@
 <title>Bia · Dashboard Financeiro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
@@ -108,7 +108,7 @@
 
       <section id="s-rentab" class="sec">
         <div class="card">
-          <div class="card-hd">Rentabilidade por ativo <small>vs benchmarks · Brapi</small></div>
+          <div class="card-hd">Rentabilidade por ativo <small>vs benchmarks · Yahoo Finance</small></div>
           <div class="ptabs" id="pt-rent">
             <button class="ptab on" onclick="setRP('1m',this)">1 mês</button>
             <button class="ptab" onclick="setRP('3m',this)">3 meses</button>
@@ -139,7 +139,7 @@
           <div class="kpi"><div class="kpi-l">maior pagador</div><div class="kpi-v" id="pv-top">—</div></div>
         </div>
         <div class="g2">
-          <div class="card"><div class="card-hd">Por ativo <small>12 meses · Brapi</small></div>
+          <div class="card"><div class="card-hd">Por ativo <small>dados do Pluggy</small></div>
             <table class="tbl"><thead><tr><th>ativo</th><th>proventos (12m)</th><th>yield</th></tr></thead><tbody id="pv-tb"></tbody></table>
           </div>
           <div class="card"><div class="card-hd">Histórico mensal</div><div class="cw"><canvas id="pv-chart"></canvas></div></div>
@@ -163,7 +163,7 @@
           </div>
           <div id="ac-msg" style="font-size:11px;color:var(--g);min-height:16px;margin-bottom:.75rem"></div>
         </div>
-        <div class="card"><div class="card-hd">Rentabilidade detalhada <small>custo médio × preço Brapi</small></div>
+        <div class="card"><div class="card-hd">Rentabilidade detalhada <small>custo médio × preço atual</small></div>
           <table class="tbl"><thead><tr><th>ativo</th><th>qtd</th><th>custo médio</th><th>preço atual</th><th>custo total</th><th>valor atual</th><th>ganho/perda</th><th>%</th></tr></thead><tbody id="ac-tb"></tbody></table>
         </div>
       </section>
@@ -171,10 +171,17 @@
     </div>
   </div>
 </div>
-<script src="js/config.js?v=5"></script>
-<script src="js/api.js?v=5"></script>
-<script src="js/charts.js?v=5"></script>
-<script src="js/render.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
+<!-- load order: config → tasks → agents → charts → render → app -->
+<script src="js/config.js?v=6"></script>
+<script src="js/tasks/cache.js?v=6"></script>
+<script src="js/tasks/settings.js?v=6"></script>
+<script src="js/tasks/banking.js?v=6"></script>
+<script src="js/tasks/market.js?v=6"></script>
+<script src="js/tasks/benchmarks.js?v=6"></script>
+<script src="js/tasks/calculations.js?v=6"></script>
+<script src="js/agents/data-agent.js?v=6"></script>
+<script src="js/charts.js?v=6"></script>
+<script src="js/render.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>
