@@ -45,7 +45,10 @@ async function savePM() {
 }
 
 // ── Cache ────────────────────────────────────────────────
-async function cacheOk() { const d = await dbGet('cache_date'); return d === todayKey(); }
+async function cacheOk() {
+  const [d, bd] = await Promise.all([dbGet('cache_date'), dbGet('cache_brapi')]);
+  return d === todayKey() && bd && Object.keys(bd).length > 0;
+}
 
 async function saveCache() {
   await Promise.all([
@@ -76,10 +79,11 @@ async function plAuth() {
 async function plF(path) { const k = await plAuth(); const r = await fetch(`${PL_BASE}${path}`, { headers: { 'X-API-KEY': k } }); return r.json(); }
 
 // ── Brapi ────────────────────────────────────────────────
+// Plan limit: max 3 tickers per request for range=1y; max 1 ticker for index symbols
 async function fetchBrapi(tickers) {
   if (!tickers.length) return;
-  for (let i = 0; i < tickers.length; i += 8) {
-    const batch = tickers.slice(i, i + 8).join(',');
+  for (let i = 0; i < tickers.length; i += 3) {
+    const batch = tickers.slice(i, i + 3).join(',');
     try {
       const [rH, rD] = await Promise.all([
         fetch(`${BA}/quote/${batch}?range=1y&interval=1d&token=${BT}`).then(r => r.json()),
@@ -101,18 +105,24 @@ async function fetchBrapi(tickers) {
 }
 
 async function fetchBM() {
+  // Index symbols require individual requests and support range up to 3mo only
+  const parseBmResult = (d, key) => {
+    if (!d.results?.[0]) return;
+    const s = d.results[0];
+    BM[key] = {
+      price: s.regularMarketPrice,
+      history: (s.historicalDataPrice || [])
+        .map(h => ({ date: ts2d(h.date), close: +(h.adjustedClose ?? h.close) }))
+        .filter(h => h.close > 0).sort((a, b) => a.date.localeCompare(b.date))
+    };
+  };
   try {
-    const r = await fetch(`${BA}/quote/%5EBVSP,%5EGSPC?range=1y&interval=1d&token=${BT}`);
-    const d = await r.json();
-    if (d.results) d.results.forEach(s => {
-      const key = s.symbol === '^BVSP' ? 'BVSP' : 'GSPC';
-      BM[key] = {
-        price: s.regularMarketPrice,
-        history: (s.historicalDataPrice || [])
-          .map(h => ({ date: ts2d(h.date), close: +(h.adjustedClose ?? h.close) }))
-          .filter(h => h.close > 0).sort((a, b) => a.date.localeCompare(b.date))
-      };
-    });
+    const [rBvsp, rGspc] = await Promise.all([
+      fetch(`${BA}/quote/%5EBVSP?range=3mo&interval=1d&token=${BT}`).then(r => r.json()),
+      fetch(`${BA}/quote/%5EGSPC?range=3mo&interval=1d&token=${BT}`).then(r => r.json()),
+    ]);
+    parseBmResult(rBvsp, 'BVSP');
+    parseBmResult(rGspc, 'GSPC');
   } catch (e) { console.warn('BM fetch error', e); }
   try {
     const rc = await fetch(`${BA}/taxas/cdi`);
