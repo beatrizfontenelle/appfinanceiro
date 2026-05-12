@@ -79,27 +79,21 @@ async function plAuth() {
 async function plF(path) { const k = await plAuth(); const r = await fetch(`${PL_BASE}${path}`, { headers: { 'X-API-KEY': k } }); return r.json(); }
 
 // ── Brapi ────────────────────────────────────────────────
-// Plan limit: max 3 tickers per request for range=1y; max 1 ticker for index symbols
+// Plano atual: 1 ticker por request; range máximo = 3mo; dividends indisponível
 async function fetchBrapi(tickers) {
   if (!tickers.length) return;
-  for (let i = 0; i < tickers.length; i += 3) {
-    const batch = tickers.slice(i, i + 3).join(',');
+  await Promise.all(tickers.map(async ticker => {
     try {
-      const [rH, rD] = await Promise.all([
-        fetch(`${BA}/quote/${batch}?range=1y&interval=1d&token=${BT}`).then(r => r.json()),
-        fetch(`${BA}/quote/${batch}?dividends=true&token=${BT}`).then(r => r.json()),
-      ]);
-      const dm = {};
-      if (rD.results) rD.results.forEach(s => { dm[s.symbol] = s.dividendsData?.cashDividends || []; });
-      if (rH.results) rH.results.forEach(s => {
-        const history = (s.historicalDataPrice || [])
-          .map(h => ({ date: ts2d(h.date), close: +(h.adjustedClose ?? h.close) }))
-          .filter(h => h.close > 0 && !isNaN(h.close))
-          .sort((a, b) => a.date.localeCompare(b.date));
-        BD[s.symbol] = { price: s.regularMarketPrice, updatedAt: s.regularMarketTime || null, history, dividends: dm[s.symbol] || [] };
-      });
-    } catch (e) { console.warn('Brapi batch error', batch, e); }
-  }
+      const r = await fetch(`${BA}/quote/${ticker}?range=3mo&interval=1d&token=${BT}`).then(r => r.json());
+      if (!r.results?.[0]) { console.warn('Brapi sem resultado para', ticker, r.message || ''); return; }
+      const s = r.results[0];
+      const history = (s.historicalDataPrice || [])
+        .map(h => ({ date: ts2d(h.date), close: +(h.adjustedClose ?? h.close) }))
+        .filter(h => h.close > 0 && !isNaN(h.close))
+        .sort((a, b) => a.date.localeCompare(b.date));
+      BD[s.symbol] = { price: s.regularMarketPrice, updatedAt: s.regularMarketTime || null, history, dividends: [] };
+    } catch (e) { console.warn('Brapi erro para', ticker, e); }
+  }));
   const times = Object.values(BD).filter(v => v.updatedAt).map(v => new Date(v.updatedAt).getTime());
   if (times.length) tsB = new Date(Math.max(...times)).toISOString();
 }
