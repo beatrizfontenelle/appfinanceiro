@@ -1,6 +1,6 @@
 // ── Supabase helpers ─────────────────────────────────────
 async function dbGet(k) {
-  try { const { data } = await sbc.from('user_settings').select('value').eq('key', k).single(); return data ? JSON.parse(data.value) : null; }
+  try { const { data } = await sbc.from('user_settings').select('value').eq('key', k).maybeSingle(); return data ? JSON.parse(data.value) : null; }
   catch { return null; }
 }
 async function dbSet(k, v) {
