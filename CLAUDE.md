@@ -7,7 +7,10 @@ Dashboard financeiro pessoal que evolui para um assessor financeiro completo, co
 - Frontend: HTML/CSS/JS puro, hospedado no Vercel
 - Banco de dados/cache: Supabase (PostgreSQL)
 - Dados bancários: Pluggy API (Open Finance Brasil)
-- Cotações e histórico: Brapi API
+- Cotações e histórico: Yahoo Finance v8 (via proxy Vercel em `api/yahoo.js` — necessário por CORS)
+  - Ações brasileiras: ticker + `.SA` (ex: BBDC3 → BBDC3.SA); índices sem sufixo (^BVSP, ^GSPC)
+  - Range: 1y (1 ano de histórico, suficiente para todos os períodos + TWR)
+- CDI: BrasilAPI `https://brasilapi.com.br/api/taxas/v1/cdi` (tem CORS, valor atual dinâmico)
 - Câmbio: AwesomeAPI
 - Deploy: GitHub → Vercel automático
 
@@ -15,7 +18,8 @@ Dashboard financeiro pessoal que evolui para um assessor financeiro completo, co
 - Dashboard com patrimônio total (contas + investimentos + conta internacional USD)
 - Extrato e categorias de gastos
 - Carteira de investimentos completa
-- Rentabilidade por período vs benchmarks (Ibovespa, S&P 500, CDI)
+- Rentabilidade por período vs benchmarks (Ibovespa, S&P 500, CDI dinâmico via BrasilAPI)
+- TWR (Time-Weighted Return) na aba "desde compra": usa `hpriceAt(code, i.date)` para pegar o preço histórico na data de compra via Yahoo Finance (1 ano de história)
 - Evolução patrimonial
 - Proventos/dividendos
 - Alocação por classe e ativo

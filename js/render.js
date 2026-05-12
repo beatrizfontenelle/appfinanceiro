@@ -80,7 +80,7 @@ function renderCarteira() {
   document.getElementById('inv-tb').innerHTML = inv.map(i => {
     const v = i.amount || i.balance || 0, pp = tot > 0 ? (v / tot * 100).toFixed(1) + '%' : '—';
     const bpv = bprice(i.code);
-    const pSrc = bpv != null ? `${R(bpv)} <span style="font-size:9px;color:var(--g)">brapi</span>` : (i.value != null ? `${R(i.value)} <span style="font-size:9px;color:var(--muted)">pluggy</span>` : '—');
+    const pSrc = bpv != null ? `${R(bpv)} <span style="font-size:9px;color:var(--g)">yahoo</span>` : (i.value != null ? `${R(i.value)} <span style="font-size:9px;color:var(--muted)">pluggy</span>` : '—');
     let rent = '—';
     if (i.lastMonthRate != null) rent = `<span class="${i.lastMonthRate >= 0 ? 'pos' : 'neg'}">${Pct(i.lastMonthRate)} 1m</span>`;
     else if (i.annualRate != null) rent = `<span>${Pct(i.annualRate)} a.a.</span>`;
@@ -107,14 +107,17 @@ function renderRentab() {
   document.getElementById('rent-tb').innerHTML = rv.map(i => {
     const cur = bprice(i.code);
     let r2 = null;
-    if (rentPer === 'origem' && cfg.precos[i.id] && cur) { r2 = (cur - cfg.precos[i.id]) / cfg.precos[i.id] * 100; }
-    else if (days && i.code) { r2 = calcRet(i.code, days); }
+    if (rentPer === 'origem' && cur && i.code) {
+      const buyDate = i.date?.slice(0, 10);
+      const buyPrice = buyDate ? hpriceAt(i.code, buyDate) : null;
+      if (buyPrice) r2 = (cur - buyPrice) / buyPrice * 100;
+    } else if (days && i.code) { r2 = calcRet(i.code, days); }
     const vb = r2 != null && bvsp != null ? r2 - bvsp : null;
     const vc = r2 != null && cdi  != null ? r2 - cdi  : null;
     const vg = r2 != null && gspc != null ? r2 - gspc : null;
     const rc = v => v == null ? 'muted' : v >= 0 ? 'pos' : 'neg';
     const pp2 = v => v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + 'pp';
-    return `<tr><td><b>${i.code || i.name || '—'}</b></td><td class="${r2 != null ? (r2 >= 0 ? 'pos' : 'neg') : 'muted'}">${r2 != null ? Pct(r2) : days ? 'sem hist.' : 'inserir PM'}</td><td class="${rc(vb)}">${pp2(vb)}</td><td class="${rc(vc)}">${pp2(vc)}</td><td class="${rc(vg)}">${pp2(vg)}</td><td class="mono">${cur != null ? R(cur * (i.quantity || 0)) : '—'}</td></tr>`;
+    return `<tr><td><b>${i.code || i.name || '—'}</b></td><td class="${r2 != null ? (r2 >= 0 ? 'pos' : 'neg') : 'muted'}">${r2 != null ? Pct(r2) : 'sem hist.'}</td><td class="${rc(vb)}">${pp2(vb)}</td><td class="${rc(vc)}">${pp2(vc)}</td><td class="${rc(vg)}">${pp2(vg)}</td><td class="mono">${cur != null ? R(cur * (i.quantity || 0)) : '—'}</td></tr>`;
   }).join('');
 
   document.getElementById('bm-tb').innerHTML = [
@@ -178,7 +181,7 @@ function renderProventos() {
   document.getElementById('pv-top').textContent = rows[0]?.name || '—';
   document.getElementById('pv-tb').innerHTML = rows.length
     ? rows.map(r => `<tr><td style="font-weight:500">${r.name}</td><td class="mono pos">${R(r.total)}</td><td class="${r.yld >= 6 ? 'pos' : ''}">${r.yld != null ? r.yld.toFixed(2) + '%' : '—'}</td></tr>`).join('')
-    : '<tr><td colspan="3" class="empty">sem proventos via Brapi neste período</td></tr>';
+    : '<tr><td colspan="3" class="empty">sem proventos neste período</td></tr>';
   const ml = Object.keys(monthly).sort().slice(-12);
   const ctx = document.getElementById('pv-chart').getContext('2d');
   CH['pv-chart'] = new Chart(ctx, {

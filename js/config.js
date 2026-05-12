@@ -5,8 +5,7 @@ const PL_ID  = 'd0207884-47ef-40fd-b7d2-7cfa87221cbb';
 const PL_SEC = '87c7e4dc-d5f6-4e0e-844b-5be251ca1a57';
 const PL_BASE = 'https://api.pluggy.ai';
 const ITEMS = ['e7ce6148-2c2c-4fc8-99b1-019dc5f17720', '7649ddf1-8ad3-4582-946e-b190cc5ede23'];
-const BT  = 'quWegUHgPNnkYZDym1jsWX';
-const BA  = 'https://brapi.dev/api';
+const YF_PROXY = '/api/yahoo';
 const CLRS = ['#c8b97a','#8fbd8f','#8f9fbd','#bd8fad','#bd9f8f','#7ab8c8','#b8bd8f','#c88f8f','#d4a0a0','#a0c8d4'];
 
 // ── Supabase client ──────────────────────────────────────

@@ -78,48 +78,47 @@ async function plAuth() {
 }
 async function plF(path) { const k = await plAuth(); const r = await fetch(`${PL_BASE}${path}`, { headers: { 'X-API-KEY': k } }); return r.json(); }
 
-// ── Brapi ────────────────────────────────────────────────
-// Plano atual: 1 ticker por request; range máximo = 3mo; dividends indisponível
-async function fetchBrapi(tickers) {
+// ── Yahoo Finance (via Vercel proxy — CORS) ───────────────
+function parseYfResult(r) {
+  const res = r.chart?.result?.[0]; if (!res) return null;
+  const timestamps = res.timestamp || [];
+  const closes = res.indicators?.adjclose?.[0]?.adjclose || res.indicators?.quote?.[0]?.close || [];
+  const history = timestamps
+    .map((ts, i) => ({ date: ts2d(ts), close: +(closes[i]) }))
+    .filter(h => h.close > 0 && !isNaN(h.close))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const updatedAt = res.meta.regularMarketTime ? new Date(res.meta.regularMarketTime * 1000).toISOString() : null;
+  return { price: res.meta.regularMarketPrice, updatedAt, history };
+}
+
+async function fetchYahoo(tickers) {
   if (!tickers.length) return;
   await Promise.all(tickers.map(async ticker => {
     try {
-      const r = await fetch(`${BA}/quote/${ticker}?range=3mo&interval=1d&token=${BT}`).then(r => r.json());
-      if (!r.results?.[0]) { console.warn('Brapi sem resultado para', ticker, r.message || ''); return; }
-      const s = r.results[0];
-      const history = (s.historicalDataPrice || [])
-        .map(h => ({ date: ts2d(h.date), close: +(h.adjustedClose ?? h.close) }))
-        .filter(h => h.close > 0 && !isNaN(h.close))
-        .sort((a, b) => a.date.localeCompare(b.date));
-      BD[s.symbol] = { price: s.regularMarketPrice, updatedAt: s.regularMarketTime || null, history, dividends: [] };
-    } catch (e) { console.warn('Brapi erro para', ticker, e); }
+      const sym = ticker + '.SA';
+      const r = await fetch(`${YF_PROXY}?symbol=${encodeURIComponent(sym)}&range=1y&interval=1d`).then(r => r.json());
+      const parsed = parseYfResult(r);
+      if (!parsed) { console.warn('Yahoo sem resultado para', sym, r.chart?.error || ''); return; }
+      BD[ticker] = { ...parsed, dividends: [] };
+    } catch (e) { console.warn('Yahoo erro para', ticker, e); }
   }));
   const times = Object.values(BD).filter(v => v.updatedAt).map(v => new Date(v.updatedAt).getTime());
   if (times.length) tsB = new Date(Math.max(...times)).toISOString();
 }
 
 async function fetchBM() {
-  // Index symbols require individual requests and support range up to 3mo only
-  const parseBmResult = (d, key) => {
-    if (!d.results?.[0]) return;
-    const s = d.results[0];
-    BM[key] = {
-      price: s.regularMarketPrice,
-      history: (s.historicalDataPrice || [])
-        .map(h => ({ date: ts2d(h.date), close: +(h.adjustedClose ?? h.close) }))
-        .filter(h => h.close > 0).sort((a, b) => a.date.localeCompare(b.date))
-    };
-  };
   try {
     const [rBvsp, rGspc] = await Promise.all([
-      fetch(`${BA}/quote/%5EBVSP?range=3mo&interval=1d&token=${BT}`).then(r => r.json()),
-      fetch(`${BA}/quote/%5EGSPC?range=3mo&interval=1d&token=${BT}`).then(r => r.json()),
+      fetch(`${YF_PROXY}?symbol=${encodeURIComponent('^BVSP')}&range=1y&interval=1d`).then(r => r.json()),
+      fetch(`${YF_PROXY}?symbol=${encodeURIComponent('^GSPC')}&range=1y&interval=1d`).then(r => r.json()),
     ]);
-    parseBmResult(rBvsp, 'BVSP');
-    parseBmResult(rGspc, 'GSPC');
+    const bvsp = parseYfResult(rBvsp); if (bvsp) BM.BVSP = bvsp;
+    const gspc = parseYfResult(rGspc); if (gspc) BM.GSPC = gspc;
   } catch (e) { console.warn('BM fetch error', e); }
-  // /taxas/cdi e /taxas/selic bloqueiam CORS no browser; usa taxa fixa atualizada manualmente
-  BM.CDI = { rate: 14.75 };
+  try {
+    const cdi = await fetch('https://brasilapi.com.br/api/taxas/v1/cdi').then(r => r.json());
+    BM.CDI = { rate: cdi.valor ?? 14.75 };
+  } catch { BM.CDI = { rate: 14.75 }; }
 }
 
 async function fetchUsd() {
@@ -149,6 +148,13 @@ function bmhprice(key, daysAgo) {
 function calcRet(code, days) { const c = bprice(code), o = hprice(code, days); if (!c || !o) return null; return (c - o) / o * 100; }
 function calcBmRet(key, days) { const c = BM[key]?.price ?? BM[key]?.history?.slice(-1)[0]?.close; const o = bmhprice(key, days); if (!c || !o) return null; return (c - o) / o * 100; }
 
+// TWR: returns the price at or after a specific date (for since-purchase return)
+function hpriceAt(code, dateStr) {
+  const h = BD[code]?.history; if (!h || !h.length) return null;
+  for (let i = 0; i < h.length; i++) { if (h[i].date >= dateStr) return h[i].close; }
+  return null;
+}
+
 // ── Load ─────────────────────────────────────────────────
 async function loadAll(force = false) {
   showOv('verificando cache...');
@@ -173,7 +179,7 @@ async function loadAll(force = false) {
     const allTs = [...accounts, ...investments].map(x => x.updatedAt).filter(Boolean);
     if (allTs.length) tsP = allTs.reduce((a, b) => a > b ? a : b);
     const tickers = [...new Set(investments.filter(isRV).map(i => i.code).filter(Boolean))];
-    showOv(`cotações Brapi (${tickers.length} ativos)...`); await fetchBrapi(tickers);
+    showOv(`cotações Yahoo Finance (${tickers.length} ativos)...`); await fetchYahoo(tickers);
     showOv('benchmarks...'); await fetchBM();
     showOv('câmbio USD...'); await fetchUsd();
     showOv('salvando cache...'); await saveCache();

@@ -72,10 +72,13 @@ function mkRentChart(rv, days, cdiR) {
   const ctx = document.getElementById('rent-chart').getContext('2d');
   if (!days) {
     const d2 = rv.map(i => {
-      const cur = bprice(i.code); if (!cfg.precos[i.id] || !cur) return null;
-      return { n: i.code || i.name, r: (cur - cfg.precos[i.id]) / cfg.precos[i.id] * 100 };
+      const cur = bprice(i.code); if (!cur || !i.code) return null;
+      const buyDate = i.date?.slice(0, 10);
+      const buyPrice = buyDate ? hpriceAt(i.code, buyDate) : null;
+      if (!buyPrice) return null;
+      return { n: i.code || i.name, r: (cur - buyPrice) / buyPrice * 100 };
     }).filter(Boolean);
-    if (!d2.length) { ctx.canvas.parentElement.innerHTML = '<div class="empty">insira custo médio para ver este gráfico</div>'; return; }
+    if (!d2.length) { ctx.canvas.parentElement.innerHTML = '<div class="empty">sem histórico de preços para calcular TWR</div>'; return; }
     CH['rent-chart'] = new Chart(ctx, {
       type: 'bar',
       data: { labels: d2.map(x => x.n), datasets: [{ label: 'Retorno desde compra', data: d2.map(x => x.r), backgroundColor: d2.map(x => x.r >= 0 ? 'rgba(143,189,143,.6)' : 'rgba(189,143,143,.6)'), borderColor: d2.map(x => x.r >= 0 ? '#8fbd8f' : '#bd8f8f'), borderWidth: 1 }] },
