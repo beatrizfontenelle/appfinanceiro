@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bia · Dashboard Financeiro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="overlay" class="overlay"><div class="spinner"></div><div class="omsg" id="omsg">iniciando...</div></div>
+<div class="shell">
+  <nav class="sidebar">
+    <div class="logo">Bia</div><div class="logo-sub">Financial Dashboard</div>
+    <div class="nav-group">visão geral</div>
+    <button class="nav-item on" onclick="go('overview',this)"><span class="ndot"></span>patrimônio</button>
+    <div class="nav-group">gastos</div>
+    <button class="nav-item" onclick="go('gastos',this)"><span class="ndot"></span>transações</button>
+    <button class="nav-item" onclick="go('cats',this)"><span class="ndot"></span>categorias</button>
+    <div class="nav-group">investimentos</div>
+    <button class="nav-item" onclick="go('carteira',this)"><span class="ndot"></span>carteira</button>
+    <button class="nav-item" onclick="go('rentab',this)"><span class="ndot"></span>rentabilidade</button>
+    <button class="nav-item" onclick="go('evolucao',this)"><span class="ndot"></span>evolução patrimonial</button>
+    <button class="nav-item" onclick="go('proventos',this)"><span class="ndot"></span>proventos</button>
+    <button class="nav-item" onclick="go('alocacao',this)"><span class="ndot"></span>alocação</button>
+    <button class="nav-item" onclick="go('acoes',this)"><span class="ndot"></span>custo médio</button>
+    <div class="sidebar-foot">
+      <div class="sline" id="st-pl">—</div>
+      <div class="sline" id="st-br">—</div>
+      <div class="sline" id="st-db">—</div>
+    </div>
+  </nav>
+  <div class="main">
+    <div class="topbar">
+      <div><div class="t1" id="ptitle">Patrimônio</div><div class="t2" id="pmeta"></div></div>
+      <button class="btn btn-a" onclick="forceReload()">↻ forçar atualização</button>
+    </div>
+    <div class="content">
+
+      <section id="s-overview" class="sec on">
+        <div id="freshbar" class="fresh"></div>
+        <div class="kgrid">
+          <div class="kpi"><div class="kpi-l">patrimônio total</div><div class="kpi-v" id="kp-tot">—</div><div class="kpi-s">contas + inv + USD</div></div>
+          <div class="kpi"><div class="kpi-l">saldo em conta</div><div class="kpi-v" id="kp-sal">—</div><div class="kpi-s" id="kp-sal-s">—</div></div>
+          <div class="kpi"><div class="kpi-l">investimentos</div><div class="kpi-v" id="kp-inv">—</div><div class="kpi-s" id="kp-inv-s">—</div></div>
+          <div class="kpi"><div class="kpi-l">conta internacional</div><div class="kpi-v" id="kp-int">—</div><div class="kpi-s" id="kp-int-s">—</div></div>
+        </div>
+        <div class="g2">
+          <div class="card"><div class="card-hd">Alocação <small id="aloc-tot"></small></div>
+            <div class="donut-wrap"><svg id="donut" width="120" height="120" viewBox="0 0 120 120"></svg><div id="donut-leg" class="donut-leg"></div></div>
+          </div>
+          <div class="card"><div class="card-hd">Contas bancárias</div>
+            <table class="tbl"><thead><tr><th>banco</th><th>tipo</th><th>saldo</th></tr></thead><tbody id="contas-tb"></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd">Conta Internacional (USD) <small>entrada manual · fora do Open Finance</small></div>
+          <div class="int-grid">
+            <div class="int-field ig"><label>saldo (USD)</label><input type="number" id="i-usd" step="0.01" oninput="scheduleSave()"/></div>
+            <div class="int-field ig"><label>custo de aquisição (BRL)</label><input type="number" id="i-custo" step="0.01" placeholder="2691.30" oninput="scheduleSave()"/></div>
+            <div class="int-field"><div class="kpi-l">cotação D-1</div><div class="int-val" id="i-rate">—</div></div>
+            <div class="int-field"><div class="kpi-l">valor hoje</div><div class="int-val" id="i-hoje">—</div></div>
+            <div class="int-field"><div class="kpi-l">ganho cambial</div><div class="int-val" id="i-ganho">—</div></div>
+            <div style="align-self:flex-end;padding-bottom:4px"><span class="saved" id="sv-badge">✓ salvo</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="s-gastos" class="sec">
+        <div class="frow" id="fp"><button class="fbtn on" onclick="setP(30,this)">30 dias</button><button class="fbtn" onclick="setP(60,this)">60 dias</button><button class="fbtn" onclick="setP(90,this)">90 dias</button><button class="fbtn" onclick="setP(0,this)">tudo</button></div>
+        <div class="kgrid" style="margin-bottom:1.5rem">
+          <div class="kpi"><div class="kpi-l">entradas</div><div class="kpi-v pos" id="g-cr">—</div></div>
+          <div class="kpi"><div class="kpi-l">saídas</div><div class="kpi-v neg" id="g-db">—</div></div>
+          <div class="kpi"><div class="kpi-l">saldo</div><div class="kpi-v" id="g-lq">—</div></div>
+          <div class="kpi"><div class="kpi-l">transações</div><div class="kpi-v" id="g-n">—</div></div>
+        </div>
+        <div class="card"><div class="card-hd">Extrato</div>
+          <div class="frow" id="ft"><button class="fbtn on" onclick="setT('all',this)">todas</button><button class="fbtn" onclick="setT('DEBIT',this)">saídas</button><button class="fbtn" onclick="setT('CREDIT',this)">entradas</button></div>
+          <div style="max-height:480px;overflow-y:auto">
+            <table class="tbl"><thead><tr><th>data</th><th>descrição</th><th>categoria</th><th>método</th><th>valor</th></tr></thead><tbody id="tx-tb"></tbody></table>
+          </div>
+        </div>
+      </section>
+
+      <section id="s-cats" class="sec">
+        <div class="frow" id="fc"><button class="fbtn on" onclick="setC(30,this)">30 dias</button><button class="fbtn" onclick="setC(60,this)">60 dias</button><button class="fbtn" onclick="setC(90,this)">90 dias</button><button class="fbtn" onclick="setC(0,this)">tudo</button></div>
+        <div class="g2">
+          <div class="card"><div class="card-hd">Por categoria</div><div id="cat-bars" class="bar-chart"></div></div>
+          <div class="card"><div class="card-hd">Por método de pagamento</div><div id="mth-bars" class="bar-chart"></div></div>
+        </div>
+        <div class="card"><div class="card-hd">Fluxo mensal</div><div class="cw"><canvas id="fluxo-chart"></canvas></div></div>
+      </section>
+
+      <section id="s-carteira" class="sec">
+        <div class="kgrid" style="margin-bottom:1.5rem">
+          <div class="kpi"><div class="kpi-l">total investido</div><div class="kpi-v" id="iv-tot">—</div></div>
+          <div class="kpi"><div class="kpi-l">renda variável</div><div class="kpi-v" id="iv-rv">—</div></div>
+          <div class="kpi"><div class="kpi-l">renda fixa</div><div class="kpi-v" id="iv-rf">—</div></div>
+          <div class="kpi"><div class="kpi-l">fundos</div><div class="kpi-v" id="iv-fd">—</div></div>
+        </div>
+        <div class="card"><div class="card-hd">Posição completa <small id="inv-lbl"></small></div>
+          <table class="tbl"><thead><tr><th>ativo</th><th>tipo</th><th>qtd</th><th>preço atual</th><th>valor</th><th>rentabilidade</th><th>% carteira</th></tr></thead><tbody id="inv-tb"></tbody></table>
+        </div>
+      </section>
+
+      <section id="s-rentab" class="sec">
+        <div class="card">
+          <div class="card-hd">Rentabilidade por ativo <small>vs benchmarks · Brapi</small></div>
+          <div class="ptabs" id="pt-rent">
+            <button class="ptab on" onclick="setRP('1m',this)">1 mês</button>
+            <button class="ptab" onclick="setRP('3m',this)">3 meses</button>
+            <button class="ptab" onclick="setRP('6m',this)">6 meses</button>
+            <button class="ptab" onclick="setRP('1y',this)">12 meses</button>
+            <button class="ptab" onclick="setRP('origem',this)">desde compra</button>
+          </div>
+          <div id="rent-bm-leg" class="bm-legend"></div>
+          <table class="tbl"><thead><tr><th>ativo</th><th>retorno</th><th>vs Ibovespa</th><th>vs CDI</th><th>vs S&amp;P 500</th><th>valor atual</th></tr></thead><tbody id="rent-tb"></tbody></table>
+          <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+            <table class="tbl"><thead><tr><th>benchmark</th><th>retorno no período</th></tr></thead><tbody id="bm-tb"></tbody></table>
+          </div>
+        </div>
+        <div class="card"><div class="card-hd">Gráfico comparativo <small id="rent-chart-lbl"></small></div><div class="cwl"><canvas id="rent-chart"></canvas></div></div>
+      </section>
+
+      <section id="s-evolucao" class="sec">
+        <div class="warn-box">⚠ Evolução reconstruída a partir das transações bancárias. Não inclui variação de mercado dos investimentos.</div>
+        <div class="card"><div class="card-hd">Saldo acumulado em conta</div><div class="cwl"><canvas id="evol-chart"></canvas></div></div>
+        <div class="card"><div class="card-hd">Fluxo de caixa mensal</div><div class="cw"><canvas id="fluxo2-chart"></canvas></div></div>
+      </section>
+
+      <section id="s-proventos" class="sec">
+        <div class="kgrid" style="margin-bottom:1.5rem">
+          <div class="kpi"><div class="kpi-l">proventos (12m)</div><div class="kpi-v pos" id="pv-tot">—</div></div>
+          <div class="kpi"><div class="kpi-l">dividend yield médio</div><div class="kpi-v" id="pv-dy">—</div></div>
+          <div class="kpi"><div class="kpi-l">ativos pagadores</div><div class="kpi-v" id="pv-n">—</div></div>
+          <div class="kpi"><div class="kpi-l">maior pagador</div><div class="kpi-v" id="pv-top">—</div></div>
+        </div>
+        <div class="g2">
+          <div class="card"><div class="card-hd">Por ativo <small>12 meses · Brapi</small></div>
+            <table class="tbl"><thead><tr><th>ativo</th><th>proventos (12m)</th><th>yield</th></tr></thead><tbody id="pv-tb"></tbody></table>
+          </div>
+          <div class="card"><div class="card-hd">Histórico mensal</div><div class="cw"><canvas id="pv-chart"></canvas></div></div>
+        </div>
+      </section>
+
+      <section id="s-alocacao" class="sec">
+        <div class="g2">
+          <div class="card"><div class="card-hd">Por classe de ativo</div><div class="cw"><canvas id="aloc1-chart"></canvas></div></div>
+          <div class="card"><div class="card-hd">Por ativo individual</div><div class="cw"><canvas id="aloc2-chart"></canvas></div></div>
+        </div>
+        <div class="card"><div class="card-hd">Concentração</div><div id="emis-bars" class="bar-chart"></div></div>
+      </section>
+
+      <section id="s-acoes" class="sec">
+        <div class="card"><div class="card-hd">Custo médio <small>salvo no Supabase · sincronizado</small></div>
+          <div class="irow">
+            <div class="ig"><label>ativo</label><select id="ac-sel"></select></div>
+            <div class="ig"><label>preço médio (R$)</label><input type="number" id="ac-pm" placeholder="ex: 14.20" step="0.01"/></div>
+            <button class="btn btn-a" onclick="savePM()" style="padding:8px 16px;margin-top:auto">salvar ↗</button>
+          </div>
+          <div id="ac-msg" style="font-size:11px;color:var(--g);min-height:16px;margin-bottom:.75rem"></div>
+        </div>
+        <div class="card"><div class="card-hd">Rentabilidade detalhada <small>custo médio × preço Brapi</small></div>
+          <table class="tbl"><thead><tr><th>ativo</th><th>qtd</th><th>custo médio</th><th>preço atual</th><th>custo total</th><th>valor atual</th><th>ganho/perda</th><th>%</th></tr></thead><tbody id="ac-tb"></tbody></table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/render.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
