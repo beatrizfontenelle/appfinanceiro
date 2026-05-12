@@ -124,14 +124,8 @@ async function fetchBM() {
     parseBmResult(rBvsp, 'BVSP');
     parseBmResult(rGspc, 'GSPC');
   } catch (e) { console.warn('BM fetch error', e); }
-  try {
-    const rc = await fetch(`${BA}/taxas/cdi`);
-    const dc = await rc.json();
-    BM.CDI = { rate: +(dc.cdi ?? dc.taxa ?? 14.75) };
-  } catch {
-    try { const rs = await fetch(`${BA}/taxas/selic`); const ds = await rs.json(); BM.CDI = { rate: +(ds.selic ?? 14.75) }; }
-    catch { BM.CDI = { rate: 14.75 }; }
-  }
+  // /taxas/cdi e /taxas/selic bloqueiam CORS no browser; usa taxa fixa atualizada manualmente
+  BM.CDI = { rate: 14.75 };
 }
 
 async function fetchUsd() {
