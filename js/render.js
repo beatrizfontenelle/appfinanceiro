@@ -208,26 +208,8 @@ function renderRentab() {
 // ── Evolução ─────────────────────────────────────────────
 function renderEvolucao() {
   kc('evol-chart'); kc('fluxo2-chart');
-  const mo = {};
-  txAll.forEach(x => {
-    const m = x.date?.slice(0, 7); if (!m) return;
-    if (!mo[m]) mo[m] = { cr: 0, db: 0 };
-    if (x.type === 'CREDIT') mo[m].cr += Math.abs(x.amount || 0);
-    else mo[m].db += Math.abs(x.amount || 0);
-  });
-  const months = Object.keys(mo).sort();
-  const curSaldo = accounts.reduce((s, a) => s + (a.balance || 0), 0);
-  const net = months.map(m => mo[m].cr - mo[m].db);
-  const bal = []; let run = curSaldo;
-  for (let i = months.length - 1; i >= 0; i--) { bal[i] = +run.toFixed(2); run -= net[i]; }
-  const ctx = document.getElementById('evol-chart').getContext('2d');
-  const grad = ctx.createLinearGradient(0, 0, 0, 320);
-  grad.addColorStop(0, 'rgba(200,185,122,.18)'); grad.addColorStop(1, 'rgba(200,185,122,0)');
-  CH['evol-chart'] = new Chart(ctx, {
-    type: 'line',
-    data: { labels: months.map(l => l.slice(5) + '/' + l.slice(2, 4)), datasets: [{ label: 'Saldo em conta', data: bal, borderColor: '#c8b97a', backgroundColor: grad, borderWidth: 2, pointRadius: 3, tension: .4, fill: true }] },
-    options: cOpts()
-  });
+  const history = buildPatrimonyHistory();
+  mkPatrimonyChart('evol-chart', history);
   mkFluxo('fluxo2-chart');
 }
 

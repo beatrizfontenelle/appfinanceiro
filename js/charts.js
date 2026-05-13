@@ -160,6 +160,87 @@ function mkRentChart(rv, days, cdiR) {
   });
 }
 
+// ── Patrimony stacked area chart ─────────────────────────
+function mkPatrimonyChart(cid, history) {
+  kc(cid);
+  if (!history?.length) return;
+  const ctx = document.getElementById(cid).getContext('2d');
+  const labels = history.map(h => h.label);
+
+  // Gradient fills
+  function grad(ctx, r, g, b) {
+    const g2 = ctx.createLinearGradient(0, 0, 0, 400);
+    g2.addColorStop(0, `rgba(${r},${g},${b},.35)`);
+    g2.addColorStop(1, `rgba(${r},${g},${b},.02)`);
+    return g2;
+  }
+
+  const datasets = [
+    {
+      label: 'Conta bancária',
+      data: history.map(h => h.bank),
+      borderColor: '#8f9fbd', backgroundColor: grad(ctx, 143, 159, 189),
+      borderWidth: 1.5, pointRadius: 3, tension: .4, fill: 'origin', order: 4,
+    },
+    {
+      label: 'Renda Fixa',
+      data: history.map(h => h.rf),
+      borderColor: '#8fbd8f', backgroundColor: grad(ctx, 143, 189, 143),
+      borderWidth: 1.5, pointRadius: 3, tension: .4, fill: 'origin', order: 3,
+    },
+    {
+      label: 'Renda Variável',
+      data: history.map(h => h.rv),
+      borderColor: '#c8b97a', backgroundColor: grad(ctx, 200, 185, 122),
+      borderWidth: 2, pointRadius: 3, tension: .4, fill: 'origin', order: 2,
+    },
+    {
+      label: 'Internacional (USD)',
+      data: history.map(h => h.intl),
+      borderColor: '#bd8fad', backgroundColor: grad(ctx, 189, 143, 173),
+      borderWidth: 1.5, pointRadius: 3, tension: .4, fill: 'origin', order: 1,
+    },
+    {
+      label: 'Total',
+      data: history.map(h => h.total),
+      borderColor: 'rgba(240,237,230,.5)', backgroundColor: 'transparent',
+      borderWidth: 2, pointRadius: 4, tension: .4, fill: false, order: 0,
+      borderDash: [4, 3],
+    },
+  ];
+
+  CH[cid] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#888880', font: { family: 'DM Mono', size: 10 }, boxWidth: 14, padding: 12 } },
+        tooltip: {
+          backgroundColor: 'rgba(17,17,16,.97)',
+          borderColor: 'rgba(255,255,255,.1)', borderWidth: 1, padding: 12,
+          titleColor: '#888880', titleFont: { family: 'DM Mono', size: 10 },
+          bodyColor: '#f0ede6', bodyFont: { family: 'DM Mono', size: 12 },
+          callbacks: {
+            label: ctx => {
+              const v = ctx.raw;
+              if (v == null || v === 0) return '';
+              return ` ${ctx.dataset.label}: R$ ${Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#555550', font: { size: 10 }, maxRotation: 0 }, grid: { color: 'rgba(255,255,255,.03)' } },
+        y: {
+          ticks: { color: '#555550', font: { size: 10 }, callback: v => 'R$' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v) },
+          grid: { color: 'rgba(255,255,255,.04)' }
+        }
+      }
+    }
+  });
+}
+
 // ── Doughnut chart (Chart.js) ────────────────────────────
 function mkPie(id, data) {
   const ent = Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, 12);
