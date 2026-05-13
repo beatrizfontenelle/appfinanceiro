@@ -144,9 +144,23 @@ function renderCarteira() {
     const bpv = bprice(i.code);
     const pSrc = bpv != null ? `${R(bpv)} <span style="font-size:9px;color:var(--g)">mkt</span>` : (i.value != null ? `${R(i.value)} <span style="font-size:9px;color:var(--muted)">pluggy</span>` : '—');
     let rent = '—';
-    if (i.lastMonthRate != null) rent = `<span class="${i.lastMonthRate >= 0 ? 'pos' : 'neg'}">${Pct(i.lastMonthRate)} 1m</span>`;
-    else if (i.annualRate != null) rent = `<span>${Pct(i.annualRate)} a.a.</span>`;
-    else if (i.fixedAnnualRate != null) rent = `<span class="pos">${i.fixedAnnualRate}% a.a.</span>`;
+    if (isRV(i) && bpv != null) {
+      // Renda variável: usa PM se disponível, senão retorno de 1 mês via Yahoo
+      const pm = cfg.precos[i.id];
+      if (pm) {
+        const r = (bpv - pm) / pm * 100;
+        rent = `<span class="${r >= 0 ? 'pos' : 'neg'}">${Pct(r)} <span style="font-size:9px;opacity:.7">PM</span></span>`;
+      } else {
+        const r1m = calcRet(i.code, 30);
+        if (r1m != null) rent = `<span class="${r1m >= 0 ? 'pos' : 'neg'}">${Pct(r1m)} <span style="font-size:9px;opacity:.7">1m</span></span>`;
+      }
+    } else if (i.lastMonthRate != null) {
+      rent = `<span class="${i.lastMonthRate >= 0 ? 'pos' : 'neg'}">${Pct(i.lastMonthRate)} 1m</span>`;
+    } else if (i.annualRate != null) {
+      rent = `<span class="muted">${Pct(i.annualRate)} a.a.</span>`;
+    } else if (i.fixedAnnualRate != null) {
+      rent = `<span class="pos">${i.fixedAnnualRate}% a.a.</span>`;
+    }
     return `<tr><td style="font-weight:500">${i.name || i.code || '—'}</td><td><span class="tag ${TT[i.type] || 'tb'}">${i.subtype || i.type}</span></td><td class="muted mono">${i.quantity != null ? i.quantity.toLocaleString('pt-BR') : '—'}</td><td class="mono">${pSrc}</td><td class="mono">${R(v)}</td><td>${rent}</td><td class="muted">${pp}</td></tr>`;
   }).join('');
 }
