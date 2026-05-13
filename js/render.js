@@ -107,17 +107,17 @@ function renderRentab() {
   document.getElementById('rent-tb').innerHTML = rv.map(i => {
     const cur = bprice(i.code);
     let r2 = null;
-    if (rentPer === 'origem' && cur && i.code) {
-      const buyDate = i.date?.slice(0, 10);
-      const buyPrice = buyDate ? hpriceAt(i.code, buyDate) : null;
-      if (buyPrice) r2 = (cur - buyPrice) / buyPrice * 100;
+    if (rentPer === 'origem' && cur) {
+      const pm = cfg.precos[i.id];
+      if (pm) r2 = (cur - pm) / pm * 100;
     } else if (days && i.code) { r2 = calcRet(i.code, days); }
     const vb = r2 != null && bvsp != null ? r2 - bvsp : null;
     const vc = r2 != null && cdi  != null ? r2 - cdi  : null;
     const vg = r2 != null && gspc != null ? r2 - gspc : null;
     const rc = v => v == null ? 'muted' : v >= 0 ? 'pos' : 'neg';
     const pp2 = v => v == null ? '—' : (v >= 0 ? '+' : '') + v.toFixed(2) + 'pp';
-    return `<tr><td><b>${i.code || i.name || '—'}</b></td><td class="${r2 != null ? (r2 >= 0 ? 'pos' : 'neg') : 'muted'}">${r2 != null ? Pct(r2) : 'sem hist.'}</td><td class="${rc(vb)}">${pp2(vb)}</td><td class="${rc(vc)}">${pp2(vc)}</td><td class="${rc(vg)}">${pp2(vg)}</td><td class="mono">${cur != null ? R(cur * (i.quantity || 0)) : '—'}</td></tr>`;
+    const semDado = rentPer === 'origem' ? 'sem PM' : 'sem hist.';
+    return `<tr><td><b>${i.code || i.name || '—'}</b></td><td class="${r2 != null ? (r2 >= 0 ? 'pos' : 'neg') : 'muted'}">${r2 != null ? Pct(r2) : semDado}</td><td class="${rc(vb)}">${pp2(vb)}</td><td class="${rc(vc)}">${pp2(vc)}</td><td class="${rc(vg)}">${pp2(vg)}</td><td class="mono">${cur != null ? R(cur * (i.quantity || 0)) : '—'}</td></tr>`;
   }).join('');
 
   document.getElementById('bm-tb').innerHTML = [
