@@ -17,8 +17,8 @@ const MERCHANT_TABLE = [
   { p: /zé delivery|ze delivery|zedelivery/,       name: 'Zé Delivery',      cat: 'Bebidas',       icon: '🍺' },
 
   // ── Transport ──────────────────────────────────────────
-  // Uber: bills as "UBER * TRIP", "UB* PENDING", "UBER BRASIL"
-  { p: /^ub\s*\*|uber\s*\*\s*trip|uber\s*\*\s*pend|\buber\b(?!.*eat)/, name: 'Uber', cat: 'Transporte', icon: '🚗' },
+  // Uber: bills as "DL *UBERRIDES", "UBER * TRIP", "UB* PENDING", "UBER BRASIL"
+  { p: /uberride|\*uber|^ub\s*\*|uber\s*\*\s*trip|uber\s*\*\s*pend|\buber\b(?!.*eat)/, name: 'Uber', cat: 'Transporte', icon: '🚗' },
   // 99: bills as "99APP", "99 TAXI", "99PAY", sometimes just "DL" on PicPay card
   { p: /99app|99\s*taxi|99pay|\b99\b.*corrida/,    name: '99',               cat: 'Transporte',    icon: '🚗' },
   { p: /cabify/,                                   name: 'Cabify',           cat: 'Transporte',    icon: '🚗' },
