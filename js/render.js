@@ -99,7 +99,12 @@ function renderTxs() {
     const cl = x._cls === 'INCOME' ? 'pos' : x._cls === 'EXPENSE' ? 'neg' : 'muted';
     const s2 = x._cls === 'INCOME' ? '+' : '-';
     const typeChip = `<span class="tx-type ${TX_TYPE_CSS[x._cls] || 'tx-transfer'}">${TX_TYPE_LABEL[x._cls] || x._cls}</span>`;
-    return `<tr><td class="muted mono">${x.date?.slice(0, 10) || '—'}</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${x.description || ''}">${x.description || '—'}</td><td><span class="tag ta" style="font-size:9px">${(x.category || '—').slice(0, 22)}</span></td><td>${typeChip}</td><td class="mono ${cl}">${s2}${R(v)}</td></tr>`;
+    const enr = enrichTx(x);
+    const nameCol = enr.recognized
+      ? `<div style="font-weight:500">${enr.icon ? enr.icon + ' ' : ''}${enr.label}</div><div style="font-size:10px;color:var(--muted);margin-top:1px">${x.description?.slice(0, 35) || ''}</div>`
+      : `<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px" title="${x.description || ''}">${enr.label}</div>`;
+    const catLabel = enr.recognized ? enr.category : (x.category || '—');
+    return `<tr><td class="muted mono" style="white-space:nowrap">${x.date?.slice(0, 10) || '—'}</td><td style="max-width:240px">${nameCol}</td><td><span class="tag ta" style="font-size:9px">${catLabel.slice(0, 22)}</span></td><td>${typeChip}</td><td class="mono ${cl}" style="white-space:nowrap">${s2}${R(v)}</td></tr>`;
   }).join('');
 }
 
@@ -115,7 +120,10 @@ function renderCats() {
 
   const cats = {}, mths = {};
   t.forEach(x => {
-    const c = x.category || 'Outros'; cats[c] = (cats[c] || 0) + Math.abs(x.amount || 0);
+    // Use enriched category when merchant is recognized
+    const enr = enrichTx(x);
+    const c = enr.recognized ? enr.category : (x.category || 'Outros');
+    cats[c] = (cats[c] || 0) + Math.abs(x.amount || 0);
     const m2 = x.operationType || x.paymentData?.paymentMethod || 'Outros'; mths[m2] = (mths[m2] || 0) + Math.abs(x.amount || 0);
   });
   bars('cat-bars', cats, CLRS[0]); bars('mth-bars', mths, CLRS[3]);
