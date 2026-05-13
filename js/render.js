@@ -159,34 +159,49 @@ function renderEvolucao() {
 function renderProventos() {
   kc('pv-chart');
   const rv = investments.filter(isRV);
-  const rows = [], monthly = {}; let total = 0;
+  const rows = [], monthly = {}, allEvents = []; let total = 0;
   const cutoff = new Date(); cutoff.setFullYear(cutoff.getFullYear() - 1);
   rv.forEach(i => {
     const divs = BD[i.code]?.dividends || [];
-    const recent = divs.filter(d => new Date(d.paymentDate || d.approvedOn || 0) >= cutoff);
-    const perUnit = recent.reduce((s, d) => s + (d.rate || 0), 0);
+    // Yahoo Finance dividends: { date: 'YYYY-MM-DD', amount: number }
+    const recent = divs.filter(d => d.date && new Date(d.date) >= cutoff);
+    const perUnit = recent.reduce((s, d) => s + (d.amount || 0), 0);
     const tot2 = perUnit * (i.quantity || 0);
     if (tot2 > 0) {
       total += tot2;
       const yld = i.amount ? tot2 / i.amount * 100 : null;
       rows.push({ name: i.code || i.name, total: tot2, yld });
-      recent.forEach(d => { const m = (d.paymentDate || d.approvedOn || '').slice(0, 7); if (m) monthly[m] = (monthly[m] || 0) + (d.rate || 0) * (i.quantity || 0); });
+      recent.forEach(d => {
+        const m = d.date?.slice(0, 7);
+        if (m) monthly[m] = (monthly[m] || 0) + (d.amount || 0) * (i.quantity || 0);
+        allEvents.push({ date: d.date, code: i.code || i.name, amountPerUnit: d.amount || 0, qty: i.quantity || 0, total: (d.amount || 0) * (i.quantity || 0) });
+      });
     }
   });
   rows.sort((a, b) => b.total - a.total);
+  allEvents.sort((a, b) => b.date.localeCompare(a.date));
+
   document.getElementById('pv-tot').textContent = R(total);
   const avdy = rows.filter(r => r.yld).length ? rows.filter(r => r.yld).reduce((s, r) => s + (r.yld || 0), 0) / rows.filter(r => r.yld).length : null;
   document.getElementById('pv-dy').textContent = avdy != null ? avdy.toFixed(2) + '%' : '—';
   document.getElementById('pv-n').textContent = rows.length;
   document.getElementById('pv-top').textContent = rows[0]?.name || '—';
+
+  const emptyMsg = '<tr><td colspan="3" class="empty">sem proventos · clique "↻ forçar atualização" para buscar dados</td></tr>';
   document.getElementById('pv-tb').innerHTML = rows.length
-    ? rows.map(r => `<tr><td style="font-weight:500">${r.name}</td><td class="mono pos">${R(r.total)}</td><td class="${r.yld >= 6 ? 'pos' : ''}">${r.yld != null ? r.yld.toFixed(2) + '%' : '—'}</td></tr>`).join('')
-    : '<tr><td colspan="3" class="empty">sem proventos neste período</td></tr>';
+    ? rows.map(r => `<tr><td style="font-weight:500">${r.name}</td><td class="mono pos">+${R(r.total)}</td><td class="${r.yld != null && r.yld >= 6 ? 'pos' : 'muted'}">${r.yld != null ? r.yld.toFixed(2) + '%' : '—'}</td></tr>`).join('')
+    : emptyMsg;
+
+  const evTb = document.getElementById('pv-events-tb');
+  evTb.innerHTML = allEvents.length
+    ? allEvents.map(e => `<tr><td class="muted mono">${e.date}</td><td style="font-weight:500">${e.code}</td><td class="mono muted">${R(e.amountPerUnit)}/cota</td><td class="muted mono">${e.qty.toLocaleString('pt-BR')}</td><td class="mono pos">+${R(e.total)}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">sem eventos · clique "↻ forçar atualização" para buscar dados</td></tr>';
+
   const ml = Object.keys(monthly).sort().slice(-12);
   const ctx = document.getElementById('pv-chart').getContext('2d');
   CH['pv-chart'] = new Chart(ctx, {
     type: 'bar',
-    data: { labels: ml.map(l => l.slice(5) + '/' + l.slice(2, 4)), datasets: [{ label: 'Proventos', data: ml.map(l => monthly[l] || 0), backgroundColor: 'rgba(143,189,143,.55)', borderColor: '#8fbd8f', borderWidth: 1 }] },
+    data: { labels: ml.map(l => l.slice(5) + '/' + l.slice(2, 4)), datasets: [{ label: 'Proventos recebidos', data: ml.map(l => +(monthly[l] || 0).toFixed(2)), backgroundColor: 'rgba(143,189,143,.55)', borderColor: '#8fbd8f', borderWidth: 1 }] },
     options: cOpts()
   });
 }

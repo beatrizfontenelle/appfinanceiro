@@ -2,7 +2,27 @@
 function cOpts(yFmt) {
   return {
     responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { labels: { color: '#888880', font: { family: 'DM Mono', size: 11 } } } },
+    plugins: {
+      legend: { labels: { color: '#888880', font: { family: 'DM Mono', size: 11 } } },
+      tooltip: {
+        backgroundColor: 'rgba(17,17,16,.97)',
+        borderColor: 'rgba(255,255,255,.1)',
+        borderWidth: 1,
+        padding: 10,
+        titleColor: '#888880',
+        titleFont: { family: 'DM Mono', size: 10 },
+        bodyColor: '#f0ede6',
+        bodyFont: { family: 'DM Mono', size: 12 },
+        callbacks: {
+          label: ctx => {
+            const v = ctx.raw;
+            if (v == null) return '';
+            const fmt = yFmt ? yFmt(v) : (v >= 100 || v <= -100 ? 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v.toFixed(2));
+            return ` ${ctx.dataset.label}: ${fmt}`;
+          }
+        }
+      }
+    },
     scales: {
       x: { ticks: { color: '#555550', font: { size: 10 }, maxRotation: 0 }, grid: { color: 'rgba(255,255,255,.03)' } },
       y: { ticks: { color: '#555550', font: { size: 10 }, callback: yFmt || (v => v >= 1000 ? 'R$' + (v / 1000).toFixed(0) + 'k' : 'R$' + v) }, grid: { color: 'rgba(255,255,255,.04)' } }
@@ -37,7 +57,7 @@ function renderDonut(svgId, legId, g, tot) {
     c.setAttribute('transform', `rotate(-90 ${cx} ${cy})`); svg.appendChild(c); off += len;
   });
   leg.innerHTML = ent.map(([k, v], i) =>
-    `<div class="drow"><div class="ddot" style="background:${CLRS[i % CLRS.length]}"></div><span style="color:var(--muted);flex:1">${k}</span><span>${(v / tot * 100).toFixed(1)}%</span></div>`
+    `<div class="drow"><div class="ddot" style="background:${CLRS[i % CLRS.length]}"></div><span style="color:var(--muted);flex:1">${k}</span><div style="text-align:right"><div style="font-size:12px">${(v / tot * 100).toFixed(1)}%</div><div style="font-size:10px;color:var(--muted2)">${R(v)}</div></div></div>`
   ).join('');
 }
 
@@ -99,7 +119,9 @@ function mkRentChart(rv, days, cdiR) {
       return (p - base) / base * 100;
     });
     if (pts.filter(p => p != null).length < 5) return;
-    datasets.push({ label: inv.code, data: pts, borderColor: CLRS[idx % CLRS.length], borderWidth: 1.5, pointRadius: 0, tension: .3, fill: false, spanGaps: true });
+    // Stock lines: thinner and semi-transparent so benchmarks stand out
+    const col = CLRS[idx % CLRS.length];
+    datasets.push({ label: inv.code, data: pts, borderColor: col, borderWidth: 1, pointRadius: 0, tension: .3, fill: false, spanGaps: true, borderDash: [] });
   });
   const addBM = (key, label, col, dash) => {
     const h = BM[key]?.history; if (!h || !h.length) return;
@@ -110,11 +132,12 @@ function mkRentChart(rv, days, cdiR) {
       if (base == null || p == null) return null;
       return (p - base) / base * 100;
     });
-    datasets.push({ label, data: pts, borderColor: col, borderWidth: 1.5, pointRadius: 0, tension: .3, fill: false, borderDash: dash, spanGaps: true });
+    datasets.push({ label, data: pts, borderColor: col, borderWidth: 2.5, pointRadius: 0, tension: .3, fill: false, borderDash: dash, spanGaps: true });
   };
-  addBM('BVSP', 'Ibovespa', '#c8b97a', [4, 2]); addBM('GSPC', 'S&P 500', '#8f9fbd', [4, 2]);
+  // Benchmark lines: thicker and fully opaque — the reference the user compares against
+  addBM('BVSP', 'Ibovespa', '#c8b97a', [5, 3]); addBM('GSPC', 'S&P 500', '#8f9fbd', [5, 3]);
   const daily = Math.pow(1 + cdiR / 100, 1 / 252) - 1;
-  datasets.push({ label: 'CDI', data: labels.map((_, i) => (Math.pow(1 + daily, i) - 1) * 100), borderColor: '#8fbd8f', borderWidth: 1.5, pointRadius: 0, fill: false, borderDash: [2, 2], spanGaps: true });
+  datasets.push({ label: 'CDI', data: labels.map((_, i) => (Math.pow(1 + daily, i) - 1) * 100), borderColor: '#8fbd8f', borderWidth: 2, pointRadius: 0, fill: false, borderDash: [3, 3], spanGaps: true });
   if (!datasets.length) { ctx.canvas.parentElement.innerHTML = '<div class="empty">sem dados históricos para este período</div>'; return; }
   const step = Math.ceil(days / 20);
   CH['rent-chart'] = new Chart(ctx, {

@@ -15,11 +15,15 @@ async function dbSet(k, v) {
   } catch (e) { console.warn('[cache] dbSet error', k, e); }
 }
 
+// ── Cache version — bump this string whenever the data schema changes
+//    so old caches are automatically invalidated on next visit
+const CACHE_VERSION = 'v2-dividends';
+
 // ── Cache validity ────────────────────────────────────────
 async function cacheOk() {
-  const [d, mk] = await Promise.all([dbGet('cache_date'), dbGet('cache_market')]);
-  const valid = d === todayKey() && mk && Object.keys(mk).length > 0;
-  console.log('[cache] valid:', valid, '| date:', d, '| today:', todayKey(), '| tickers:', mk ? Object.keys(mk).length : 0);
+  const [d, mk, ver] = await Promise.all([dbGet('cache_date'), dbGet('cache_market'), dbGet('cache_version')]);
+  const valid = d === todayKey() && mk && Object.keys(mk).length > 0 && ver === CACHE_VERSION;
+  console.log('[cache] valid:', valid, '| date:', d, '| version:', ver, '| today:', todayKey(), '| tickers:', mk ? Object.keys(mk).length : 0);
   return valid;
 }
 
@@ -36,6 +40,7 @@ async function saveCache() {
     dbSet('cache_ts_pluggy', tsP),
     dbSet('cache_ts_market', tsB),
     dbSet('cache_date', todayKey()),
+    dbSet('cache_version', CACHE_VERSION),
   ]);
   console.log('[cache] saved');
 }
