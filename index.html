@@ -72,26 +72,38 @@
       <section id="s-gastos" class="sec">
         <div class="frow" id="fp"><button class="fbtn on" onclick="setP(30,this)">30 dias</button><button class="fbtn" onclick="setP(60,this)">60 dias</button><button class="fbtn" onclick="setP(90,this)">90 dias</button><button class="fbtn" onclick="setP(0,this)">tudo</button></div>
         <div class="kgrid" style="margin-bottom:1.5rem">
-          <div class="kpi"><div class="kpi-l">entradas</div><div class="kpi-v pos" id="g-cr">—</div></div>
-          <div class="kpi"><div class="kpi-l">saídas</div><div class="kpi-v neg" id="g-db">—</div></div>
-          <div class="kpi"><div class="kpi-l">saldo</div><div class="kpi-v" id="g-lq">—</div></div>
-          <div class="kpi"><div class="kpi-l">transações</div><div class="kpi-v" id="g-n">—</div></div>
+          <div class="kpi"><div class="kpi-l">gastos reais</div><div class="kpi-v neg" id="g-db">—</div><div class="kpi-s" id="g-db-s">—</div></div>
+          <div class="kpi"><div class="kpi-l">entradas</div><div class="kpi-v pos" id="g-cr">—</div><div class="kpi-s" id="g-cr-s">—</div></div>
+          <div class="kpi"><div class="kpi-l">investido / transferido</div><div class="kpi-v" id="g-inv">—</div><div class="kpi-s" id="g-inv-s">—</div></div>
+          <div class="kpi"><div class="kpi-l">saldo período</div><div class="kpi-v" id="g-lq">—</div><div class="kpi-s" id="g-n">—</div></div>
         </div>
         <div class="card"><div class="card-hd">Extrato</div>
-          <div class="frow" id="ft"><button class="fbtn on" onclick="setT('all',this)">todas</button><button class="fbtn" onclick="setT('DEBIT',this)">saídas</button><button class="fbtn" onclick="setT('CREDIT',this)">entradas</button></div>
+          <div class="frow" style="gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem">
+            <div id="ft" style="display:flex;gap:6px">
+              <button class="fbtn on" onclick="setT('all',this)">todas</button>
+              <button class="fbtn" onclick="setT('EXPENSE',this)">gastos</button>
+              <button class="fbtn" onclick="setT('INCOME',this)">entradas</button>
+              <button class="fbtn" onclick="setT('INVESTMENT',this)">investimentos</button>
+              <button class="fbtn" onclick="setT('TRANSFER',this)">transferências</button>
+            </div>
+            <label class="excl-toggle" id="excl-lbl"><input type="checkbox" id="excl-inv" onchange="renderTxs()"> ocultar invest. e transf.</label>
+          </div>
           <div style="max-height:480px;overflow-y:auto">
-            <table class="tbl"><thead><tr><th>data</th><th>descrição</th><th>categoria</th><th>método</th><th>valor</th></tr></thead><tbody id="tx-tb"></tbody></table>
+            <table class="tbl"><thead><tr><th>data</th><th>descrição</th><th>categoria</th><th>tipo</th><th>valor</th></tr></thead><tbody id="tx-tb"></tbody></table>
           </div>
         </div>
       </section>
 
       <section id="s-cats" class="sec">
-        <div class="frow" id="fc"><button class="fbtn on" onclick="setC(30,this)">30 dias</button><button class="fbtn" onclick="setC(60,this)">60 dias</button><button class="fbtn" onclick="setC(90,this)">90 dias</button><button class="fbtn" onclick="setC(0,this)">tudo</button></div>
+        <div class="frow" style="align-items:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap">
+          <div id="fc" style="display:flex;gap:6px"><button class="fbtn on" onclick="setC(30,this)">30 dias</button><button class="fbtn" onclick="setC(60,this)">60 dias</button><button class="fbtn" onclick="setC(90,this)">90 dias</button><button class="fbtn" onclick="setC(0,this)">tudo</button></div>
+          <label class="excl-toggle"><input type="checkbox" id="excl-inv-cat" checked onchange="renderCats()"> apenas gastos reais</label>
+        </div>
         <div class="g2">
           <div class="card"><div class="card-hd">Por categoria</div><div id="cat-bars" class="bar-chart"></div></div>
           <div class="card"><div class="card-hd">Por método de pagamento</div><div id="mth-bars" class="bar-chart"></div></div>
         </div>
-        <div class="card"><div class="card-hd">Fluxo mensal</div><div class="cw"><canvas id="fluxo-chart"></canvas></div></div>
+        <div class="card"><div class="card-hd">Fluxo mensal <small id="fluxo-lbl"></small></div><div class="cw"><canvas id="fluxo-chart"></canvas></div></div>
       </section>
 
       <section id="s-carteira" class="sec">
@@ -147,7 +159,7 @@
         <div class="card">
           <div class="card-hd">Histórico de pagamentos <small>data ex-dividendo · fonte Yahoo Finance</small></div>
           <div style="max-height:340px;overflow-y:auto">
-            <table class="tbl"><thead><tr><th>data</th><th>ativo</th><th>valor/cota</th><th>qtd</th><th>total recebido</th></tr></thead><tbody id="pv-events-tb"></tbody></table>
+            <table class="tbl"><thead><tr><th>data ex</th><th>ativo</th><th>valor/cota</th><th>qtd</th><th>total esperado</th><th>na conta?</th></tr></thead><tbody id="pv-events-tb"></tbody></table>
           </div>
         </div>
       </section>

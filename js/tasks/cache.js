@@ -62,3 +62,35 @@ async function loadCache() {
   if (tp) tsP = tp;
   if (tb) tsB = tb;
 }
+
+// ── Daily patrimônio snapshots (for KPI delta badges) ─────
+// Saves a compact snapshot keyed by date; loads yesterday's for comparison.
+// Keeps the last 30 days to avoid unbounded growth in Supabase.
+async function saveSnapshot(total, saldo, investimentos, internacional) {
+  const today = todayKey();
+  const snap = { total, saldo, investimentos, internacional, savedAt: new Date().toISOString() };
+  await dbSet('snap_' + today, snap);
+  console.log('[cache] snapshot saved for', today, '| total:', total);
+  // Best-effort cleanup: remove snapshots older than 30 days (fire-and-forget)
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
+  for (let i = 1; i <= 30; i++) {
+    const d = new Date(cutoff); d.setDate(d.getDate() - i);
+    const k = 'snap_' + d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    dbSet(k, null); // null removes the entry effectively (will just be null on read)
+  }
+}
+
+async function loadPrevSnapshot() {
+  // Try yesterday first, then up to 3 days back (weekends, holidays)
+  for (let i = 1; i <= 3; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = 'snap_' + d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+    const s = await dbGet(k);
+    if (s && s.total) {
+      prevSnapshot = s;
+      console.log('[cache] prev snapshot loaded from', k, '| total:', s.total);
+      return;
+    }
+  }
+  console.log('[cache] no previous snapshot found');
+}

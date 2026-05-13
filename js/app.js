@@ -18,7 +18,7 @@ function go(id, btn) {
 }
 
 function setP(d, b) { txDays = d; document.querySelectorAll('#fp .fbtn').forEach(x => x.classList.remove('on')); b.classList.add('on'); renderTxs(); }
-function setT(t, b) { txType = t; document.querySelectorAll('#ft .fbtn').forEach(x => x.classList.remove('on')); b.classList.add('on'); renderTxs(); }
+function setT(t, b) { txType = t; document.querySelectorAll('#ft .fbtn').forEach(x => x.classList.remove('on')); b.classList.add('on'); if (document.getElementById('excl-inv')) document.getElementById('excl-inv').checked = false; renderTxs(); }
 function setC(d, b) { catDays = d; document.querySelectorAll('#fc .fbtn').forEach(x => x.classList.remove('on')); b.classList.add('on'); renderCats(); }
 
 // ── Bootstrap ─────────────────────────────────────────────

@@ -26,6 +26,10 @@ body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:1
 .kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:8px}
 .kpi-v{font-family:var(--serif);font-size:23px;line-height:1}.kpi-v.pos{color:var(--g)}.kpi-v.neg{color:var(--r)}
 .kpi-s{font-size:10px;color:var(--muted2);margin-top:5px}
+.kpi-delta{display:inline-flex;align-items:center;gap:3px;font-size:10px;margin-top:4px;padding:2px 6px;border-radius:4px;font-family:var(--mono)}
+.kpi-delta.pos{color:var(--g);background:rgba(143,189,143,.1)}
+.kpi-delta.neg{color:var(--r);background:rgba(189,143,143,.1)}
+.kpi-delta.zero{color:var(--muted);background:var(--bg3)}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
 .card-hd{font-family:var(--serif);font-size:16px;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .card-hd small{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:300}
@@ -71,6 +75,13 @@ body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:1
 .bm-legend{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
 .bm-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
 .bm-line{width:18px;height:2px;border-radius:1px}
+.excl-toggle{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;white-space:nowrap}
+.excl-toggle input{accent-color:var(--accent);cursor:pointer}
+.tx-type{display:inline-block;font-size:9px;padding:2px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+.tx-expense{color:#bd8f8f;background:rgba(189,143,143,.1)}
+.tx-income{color:#8fbd8f;background:rgba(143,189,143,.1)}
+.tx-investment{color:#8f9fbd;background:rgba(143,159,189,.1)}
+.tx-transfer{color:#888880;background:rgba(136,136,128,.1)}
 .warn-box{background:rgba(200,185,122,.08);border:1px solid rgba(200,185,122,.2);border-radius:8px;padding:.75rem 1rem;font-size:11px;color:var(--accent);margin-bottom:1rem}
 .overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:1rem}
 .overlay.hidden{display:none}

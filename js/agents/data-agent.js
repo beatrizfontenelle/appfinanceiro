@@ -49,7 +49,15 @@ async function loadAll(force = false) {
     console.log('[data-agent] fresh data loaded and cached');
   }
 
+  // Load yesterday's snapshot for delta KPI badges (fire-and-forget — doesn't block render)
+  loadPrevSnapshot().then(() => renderOverview());
+
   renderAll();
+
+  // Save today's snapshot after fresh data (always, cache or not)
+  const sal = accounts.reduce((s, a) => s + (a.balance || 0), 0);
+  const inv = investments.reduce((s, i) => s + (i.amount || i.balance || 0), 0);
+  saveSnapshot(sal + inv + intBrl(), sal, inv, intBrl());
 
   document.getElementById('pmeta').textContent = 'dados de: ' + toBRL(tsP);
   document.getElementById('freshbar').innerHTML = [

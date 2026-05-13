@@ -18,6 +18,7 @@ let cfg = { int_usd: 526.15, int_custo: 2691.30, precos: {} };
 let txDays = 30, txType = 'all', catDays = 30, rentPer = '1m';
 let CH = {};
 let tsP = null, tsB = null;
+let prevSnapshot = null; // yesterday's patrimônio snapshot for delta KPIs
 
 // ── Utility helpers ──────────────────────────────────────
 const R     = v => v == null ? '—' : 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

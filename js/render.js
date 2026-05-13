@@ -1,10 +1,35 @@
+// ── KPI delta badge helper ────────────────────────────────
+function deltaBadge(current, prev) {
+  if (prev == null || prev === 0) return '';
+  const diff = current - prev;
+  const pct = diff / Math.abs(prev) * 100;
+  const cls = diff > 0 ? 'pos' : diff < 0 ? 'neg' : 'zero';
+  const arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '●';
+  const sign = diff >= 0 ? '+' : '';
+  return `<div class="kpi-delta ${cls}">${arrow} ${sign}${R(Math.abs(diff))} (${sign}${pct.toFixed(1)}%) vs ontem</div>`;
+}
+
 // ── KPIs & international account ─────────────────────────
 function updateKPIs() {
   const sal = accounts.reduce((s, a) => s + (a.balance || 0), 0);
   const inv = investments.reduce((s, i) => s + (i.amount || i.balance || 0), 0);
-  document.getElementById('kp-tot').textContent = R(sal + inv + intBrl());
+  const tot = sal + inv + intBrl();
+  document.getElementById('kp-tot').textContent = R(tot);
   document.getElementById('kp-sal').textContent = R(sal); document.getElementById('kp-sal-s').textContent = accounts.length + ' conta(s)';
   document.getElementById('kp-inv').textContent = R(inv); document.getElementById('kp-inv-s').textContent = investments.length + ' ativos';
+  // Delta badges — only shown after prevSnapshot is loaded
+  if (prevSnapshot) {
+    const totEl = document.getElementById('kp-tot').parentElement;
+    const salEl = document.getElementById('kp-sal').parentElement;
+    const invEl = document.getElementById('kp-inv').parentElement;
+    // Remove old badges
+    totEl.querySelectorAll('.kpi-delta').forEach(e => e.remove());
+    salEl.querySelectorAll('.kpi-delta').forEach(e => e.remove());
+    invEl.querySelectorAll('.kpi-delta').forEach(e => e.remove());
+    totEl.insertAdjacentHTML('beforeend', deltaBadge(tot, prevSnapshot.total));
+    salEl.insertAdjacentHTML('beforeend', deltaBadge(sal, prevSnapshot.saldo));
+    invEl.insertAdjacentHTML('beforeend', deltaBadge(inv, prevSnapshot.investimentos));
+  }
 }
 
 function renderInt() {
@@ -39,33 +64,62 @@ function renderOverview() {
 // ── Gastos ───────────────────────────────────────────────
 function fTx(days) { if (!days) return txAll; const c = new Date(); c.setDate(c.getDate() - days); return txAll.filter(t => new Date(t.date) >= c); }
 
+const TX_TYPE_LABEL = { EXPENSE: 'gasto', INCOME: 'entrada', INVESTMENT: 'investimento', TRANSFER: 'transferência', OTHER: 'outro' };
+const TX_TYPE_CSS   = { EXPENSE: 'tx-expense', INCOME: 'tx-income', INVESTMENT: 'tx-investment', TRANSFER: 'tx-transfer', OTHER: 'tx-transfer' };
+
 function renderTxs() {
-  const t = fTx(txDays).filter(x => txType === 'all' || x.type === txType);
-  const cr = t.filter(x => x.type === 'CREDIT').reduce((s, x) => s + Math.abs(x.amount || 0), 0);
-  const db2 = t.filter(x => x.type === 'DEBIT').reduce((s, x) => s + Math.abs(x.amount || 0), 0);
-  const lq = cr - db2;
-  document.getElementById('g-cr').textContent = R(cr); document.getElementById('g-db').textContent = R(db2);
-  document.getElementById('g-lq').textContent = R(lq); document.getElementById('g-lq').className = 'kpi-v ' + (lq >= 0 ? 'pos' : 'neg');
-  document.getElementById('g-n').textContent = t.length;
+  const base = fTx(txDays);
+  const exclInv = document.getElementById('excl-inv')?.checked;
+  // Classify all transactions
+  const classified = base.map(x => ({ ...x, _cls: classifyTx(x) }));
+  // Apply type filter
+  let filtered = classified;
+  if (txType !== 'all') filtered = classified.filter(x => x._cls === txType);
+  if (exclInv) filtered = classified.filter(x => x._cls === 'EXPENSE' || x._cls === 'INCOME');
+
+  const expenses  = classified.filter(x => x._cls === 'EXPENSE').reduce((s, x) => s + Math.abs(x.amount || 0), 0);
+  const incomes   = classified.filter(x => x._cls === 'INCOME').reduce((s, x) => s + Math.abs(x.amount || 0), 0);
+  const invested  = classified.filter(x => x._cls === 'INVESTMENT' || x._cls === 'TRANSFER').reduce((s, x) => s + Math.abs(x.amount || 0), 0);
+  const lq = incomes - expenses;
+
+  document.getElementById('g-db').textContent = R(expenses);
+  document.getElementById('g-db-s').textContent = classified.filter(x => x._cls === 'EXPENSE').length + ' transações';
+  document.getElementById('g-cr').textContent = R(incomes);
+  document.getElementById('g-cr-s').textContent = classified.filter(x => x._cls === 'INCOME').length + ' transações';
+  document.getElementById('g-inv').textContent = R(invested);
+  document.getElementById('g-inv-s').textContent = classified.filter(x => x._cls === 'INVESTMENT' || x._cls === 'TRANSFER').length + ' transações';
+  document.getElementById('g-lq').textContent = R(lq);
+  document.getElementById('g-lq').className = 'kpi-v ' + (lq >= 0 ? 'pos' : 'neg');
+  document.getElementById('g-n').textContent = filtered.length + ' mostradas de ' + classified.length;
+
   const tb = document.getElementById('tx-tb');
-  if (!t.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">sem transações</td></tr>'; return; }
-  tb.innerHTML = t.slice(0, 200).map(x => {
-    const v = Math.abs(x.amount || 0), cl = x.type === 'CREDIT' ? 'pos' : 'neg', s2 = x.type === 'CREDIT' ? '+' : '-';
-    const m = x.operationType || x.paymentData?.paymentMethod || '—';
-    return `<tr><td class="muted mono">${x.date?.slice(0, 10) || '—'}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.description || '—'}</td><td><span class="tag ta" style="font-size:9px">${(x.category || '—').slice(0, 20)}</span></td><td class="muted">${m}</td><td class="mono ${cl}">${s2}${R(v)}</td></tr>`;
+  if (!filtered.length) { tb.innerHTML = '<tr><td colspan="5" class="empty">sem transações neste filtro</td></tr>'; return; }
+  tb.innerHTML = filtered.slice(0, 300).map(x => {
+    const v = Math.abs(x.amount || 0);
+    const cl = x._cls === 'INCOME' ? 'pos' : x._cls === 'EXPENSE' ? 'neg' : 'muted';
+    const s2 = x._cls === 'INCOME' ? '+' : '-';
+    const typeChip = `<span class="tx-type ${TX_TYPE_CSS[x._cls] || 'tx-transfer'}">${TX_TYPE_LABEL[x._cls] || x._cls}</span>`;
+    return `<tr><td class="muted mono">${x.date?.slice(0, 10) || '—'}</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${x.description || ''}">${x.description || '—'}</td><td><span class="tag ta" style="font-size:9px">${(x.category || '—').slice(0, 22)}</span></td><td>${typeChip}</td><td class="mono ${cl}">${s2}${R(v)}</td></tr>`;
   }).join('');
 }
 
 // ── Categorias ───────────────────────────────────────────
 function renderCats() {
-  const t = fTx(catDays).filter(x => x.type === 'DEBIT');
+  const onlyReal = document.getElementById('excl-inv-cat')?.checked ?? true;
+  let t = fTx(catDays).map(x => ({ ...x, _cls: classifyTx(x) }));
+  if (onlyReal) t = t.filter(x => x._cls === 'EXPENSE');
+  else t = t.filter(x => x._cls !== 'INCOME');
+
+  const lbl = document.getElementById('fluxo-lbl');
+  if (lbl) lbl.textContent = onlyReal ? 'apenas gastos reais' : 'débitos (inclui investimentos)';
+
   const cats = {}, mths = {};
   t.forEach(x => {
     const c = x.category || 'Outros'; cats[c] = (cats[c] || 0) + Math.abs(x.amount || 0);
     const m2 = x.operationType || x.paymentData?.paymentMethod || 'Outros'; mths[m2] = (mths[m2] || 0) + Math.abs(x.amount || 0);
   });
   bars('cat-bars', cats, CLRS[0]); bars('mth-bars', mths, CLRS[3]);
-  mkFluxo('fluxo-chart');
+  mkFluxo('fluxo-chart', onlyReal);
 }
 
 // ── Carteira ─────────────────────────────────────────────
@@ -180,6 +234,7 @@ function renderProventos() {
   });
   rows.sort((a, b) => b.total - a.total);
   allEvents.sort((a, b) => b.date.localeCompare(a.date));
+  const divCheck = crossCheckDividends(rv);
 
   document.getElementById('pv-tot').textContent = R(total);
   const avdy = rows.filter(r => r.yld).length ? rows.filter(r => r.yld).reduce((s, r) => s + (r.yld || 0), 0) / rows.filter(r => r.yld).length : null;
@@ -194,8 +249,14 @@ function renderProventos() {
 
   const evTb = document.getElementById('pv-events-tb');
   evTb.innerHTML = allEvents.length
-    ? allEvents.map(e => `<tr><td class="muted mono">${e.date}</td><td style="font-weight:500">${e.code}</td><td class="mono muted">${R(e.amountPerUnit)}/cota</td><td class="muted mono">${e.qty.toLocaleString('pt-BR')}</td><td class="mono pos">+${R(e.total)}</td></tr>`).join('')
-    : '<tr><td colspan="5" class="empty">sem eventos · clique "↻ forçar atualização" para buscar dados</td></tr>';
+    ? allEvents.map(e => {
+        const chk = divCheck.get(`${e.code}_${e.date}`);
+        const verBadge = chk?.matched
+          ? `<span title="crédito de ${R(chk.txAmount)} em ${chk.txDate}" style="color:var(--g);font-size:10px">✓ na conta</span>`
+          : `<span style="color:var(--muted2);font-size:10px">não confirmado</span>`;
+        return `<tr><td class="muted mono">${e.date}</td><td style="font-weight:500">${e.code}</td><td class="mono muted">${R(e.amountPerUnit)}/cota</td><td class="muted mono">${e.qty.toLocaleString('pt-BR')}</td><td class="mono pos">+${R(e.total)}</td><td>${verBadge}</td></tr>`;
+      }).join('')
+    : '<tr><td colspan="6" class="empty">sem eventos · clique "↻ forçar atualização" para buscar dados</td></tr>';
 
   const ml = Object.keys(monthly).sort().slice(-12);
   const ctx = document.getElementById('pv-chart').getContext('2d');

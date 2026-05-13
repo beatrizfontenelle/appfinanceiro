@@ -62,14 +62,21 @@ function renderDonut(svgId, legId, g, tot) {
 }
 
 // ── Monthly cash flow bar chart ──────────────────────────
-function mkFluxo(cid) {
+// onlyReal=true → only real expenses vs income (excludes investment/transfer)
+function mkFluxo(cid, onlyReal = false) {
   kc(cid);
   const mo = {};
   txAll.forEach(x => {
     const m = x.date?.slice(0, 7); if (!m) return;
     if (!mo[m]) mo[m] = { cr: 0, db: 0 };
-    if (x.type === 'CREDIT') mo[m].cr += Math.abs(x.amount || 0);
-    else mo[m].db += Math.abs(x.amount || 0);
+    const cls = classifyTx(x);
+    if (onlyReal) {
+      if (cls === 'INCOME')  mo[m].cr += Math.abs(x.amount || 0);
+      if (cls === 'EXPENSE') mo[m].db += Math.abs(x.amount || 0);
+    } else {
+      if (x.type === 'CREDIT') mo[m].cr += Math.abs(x.amount || 0);
+      else                     mo[m].db += Math.abs(x.amount || 0);
+    }
   });
   const lb = Object.keys(mo).sort().slice(-12);
   const ctx = document.getElementById(cid).getContext('2d');
@@ -78,8 +85,8 @@ function mkFluxo(cid) {
     data: {
       labels: lb.map(l => l.slice(5) + '/' + l.slice(2, 4)),
       datasets: [
-        { label: 'Entradas', data: lb.map(l => mo[l].cr), backgroundColor: 'rgba(143,189,143,.5)', borderColor: '#8fbd8f', borderWidth: 1 },
-        { label: 'Saídas',   data: lb.map(l => mo[l].db), backgroundColor: 'rgba(189,143,143,.5)', borderColor: '#bd8f8f', borderWidth: 1 },
+        { label: 'Entradas', data: lb.map(l => mo[l]?.cr || 0), backgroundColor: 'rgba(143,189,143,.5)', borderColor: '#8fbd8f', borderWidth: 1 },
+        { label: 'Saídas',   data: lb.map(l => mo[l]?.db || 0), backgroundColor: 'rgba(189,143,143,.5)', borderColor: '#bd8f8f', borderWidth: 1 },
       ]
     },
     options: cOpts()
