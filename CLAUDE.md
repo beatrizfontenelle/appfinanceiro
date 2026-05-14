@@ -1,7 +1,7 @@
 # App Financeiro Pessoal — Bia
 
 ## Visão geral
-Dashboard financeiro pessoal que evolui para um assessor de wealth management completo com IA. Objetivo final: análise fundamentalista automatizada, recomendações personalizadas e relatórios em linguagem natural.
+Dashboard financeiro pessoal que evolui para um assessor de wealth management completo com IA. Objetivo final: recomendações personalizadas, alertas e relatórios em linguagem natural.
 
 ---
 
@@ -14,6 +14,7 @@ Dashboard financeiro pessoal que evolui para um assessor de wealth management co
 | Cotações/histórico | Yahoo Finance v8 + proxy Vercel | Gratuito, 1 ano de história, sem chave de API |
 | Benchmarks | Yahoo Finance (^BVSP, ^GSPC) + BrasilAPI (CDI) | CDI dinâmico real, sem CORS |
 | Câmbio | AwesomeAPI (USD-BRL) | Gratuito, CORS liberado |
+| IA | Anthropic Claude API via `api/claude.js` | Assessora IA com contexto da carteira |
 | Deploy | GitHub (`main`) → Vercel automático | Push = deploy |
 
 ### Por que Yahoo Finance e não Brapi?
@@ -36,25 +37,18 @@ Cada task faz uma coisa só e é reutilizável independentemente:
 | `js/tasks/market.js` | Yahoo Finance: cotações + histórico 1y para ações BR |
 | `js/tasks/benchmarks.js` | Ibovespa, S&P 500, CDI (BrasilAPI), câmbio USD/BRL |
 | `js/tasks/calculations.js` | Matemática financeira: TWR, retornos por período, helpers de preço |
+| `js/tasks/merchants.js` | Reconhecimento de estabelecimentos + categorias PT |
 
 ### Agentes (sistemas com lógica de orquestração)
-Agentes coordenam múltiplas tasks para atingir um objetivo:
-
 | Arquivo | Responsabilidade |
 |---------|-----------------|
 | `js/agents/data-agent.js` | Orquestra toda a coleta de dados: decide cache vs fresh, chama tasks em sequência, salva resultado |
-
-### Agentes implementados
-| Arquivo | Responsabilidade |
-|---------|-----------------|
-| `js/agents/data-agent.js` | Orquestra toda a coleta de dados |
-| `js/agents/fundamentalist/agent.js` | **Agente Fundamentalista** — análise equity + crédito via Claude API |
+| `js/agents/advisor/agent.js` | Assessora IA: chat multi-turn com contexto completo da carteira via Claude API |
 
 ### Agentes futuros (a implementar progressivamente)
 | Agente | Descrição |
 |--------|-----------|
 | `analysis-agent.js` | Calcula métricas avançadas: volatilidade, correlação, risco, Sharpe ratio |
-| `advisor-agent.js` | Chat em linguagem natural com conhecimento completo da carteira (Claude API) |
 | `alerts-agent.js` | Monitora variações e dispara notificações via Cowork |
 | `reports-agent.js` | Gera resumo diário e envia por email via Cowork |
 
@@ -65,10 +59,7 @@ Agentes coordenam múltiplas tasks para atingir um objetivo:
 appfinanceiro/
 ├── api/
 │   ├── yahoo.js              ← Vercel serverless: proxy Yahoo Finance (resolve CORS)
-│   └── claude.js             ← Vercel serverless: proxy Anthropic Claude API
-├── supabase/
-│   └── migrations/
-│       └── 20260514_001_fundamentalist_tables.sql  ← 4 tabelas do Agente Fundamentalista
+│   └── claude.js             ← Vercel serverless: proxy Anthropic Claude API (Assessora IA)
 ├── css/
 │   └── style.css
 ├── js/
@@ -83,31 +74,24 @@ appfinanceiro/
 │   │   └── merchants.js      ← Reconhecimento de estabelecimentos + categorias PT
 │   ├── agents/
 │   │   ├── data-agent.js     ← Orquestra toda coleta e cache
-│   │   └── fundamentalist/
-│   │       ├── agent.js      ← Orquestrador: FA.analyzeAsset(), FA.analyzePDF(), FA.analyzePortfolio()
-│   │       ├── modes/
-│   │       │   ├── equity.js ← Análise de ações (DRE + múltiplos + setor + Claude)
-│   │       │   └── credit.js ← Análise de crédito privado (escritura + covenants + Claude)
-│   │       ├── memory/
-│   │       │   └── store.js  ← CRUD asset_memory + avaliação de track record
-│   │       ├── parsers/
-│   │       │   └── pdf-statement.js  ← Parser de extrato de corretora (XP, BTG, Itaú, genérico)
-│   │       └── tasks/
-│   │           ├── identify.js       ← Resolve ticker/ISIN → objeto asset canônico
-│   │           ├── cache.js          ← TTL wrapper para asset_cache no Supabase
-│   │           ├── prices.js         ← Histórico de preços acumulativo (asset_prices)
-│   │           ├── financials-cvm.js ← DRE + Balanço + DFC via Dados de Mercado / CVM
-│   │           ├── indicators.js     ← P/L, ROE, DY, etc. via Dados de Mercado
-│   │           ├── debenture-data.js ← Escritura + covenants + ANBIMA
-│   │           ├── sector.js         ← Análise setorial via Claude + web_search
-│   │           └── news.js           ← Notícias e fatos relevantes via Claude + web_search
+│   │   └── advisor/
+│   │       └── agent.js      ← Assessora IA: chat com contexto da carteira
 │   ├── charts.js             ← Wrappers Chart.js
 │   ├── render.js             ← Renderização de todas as seções
-│   └── app.js                ← Navegação + bootstrap + UI do Agente Fundamentalista
+│   └── app.js                ← Navegação + bootstrap + UI da Assessora IA
 ├── index.html
 ├── vercel.json
 └── CLAUDE.md
 ```
+
+---
+
+## Assessora IA (`js/agents/advisor/agent.js`)
+- Chat multi-turn em linguagem natural via Claude API (`claude-opus-4-5`)
+- System prompt construído em tempo real com patrimônio, posições, benchmarks e gastos
+- Mantém histórico da conversa na sessão
+- Variável de ambiente necessária: `ANTHROPIC_API_KEY` no Vercel
+- UI: seção "Assessora IA" no dashboard com interface de chat
 
 ---
 
@@ -137,73 +121,6 @@ CDI_período = CDI_anual / 365 × dias  (linear, aproximação conservadora)
 
 ### Benchmarks normalizados
 - No gráfico comparativo, todos os benchmarks são normalizados a 0% no início do período para comparação justa
-
----
-
-## Agente Fundamentalista
-
-### Dois modos de análise
-| Modo | Arquivo | Ativos |
-|------|---------|--------|
-| Equity | `modes/equity.js` | Ações brasileiras (PETR4, VALE3, etc.) |
-| Credit | `modes/credit.js` | Debêntures, CRI, CRA, FIDC |
-
-### Três formas de entrada
-1. **Via ticker/ISIN direto**: `FA.analyzeAsset('PETR4')` — identifica automaticamente
-2. **Via PDF**: `FA.analyzePDF(file)` — extrai ativos do extrato de corretora
-3. **Via carteira Pluggy**: `FA.analyzePortfolio()` — analisa todos os ativos do Open Finance
-
-### Memória por ativo (não por investidor)
-- Tabela `asset_memory`: guarda tese, rating, métricas-chave, riscos, oportunidades
-- Versioned: cada re-análise adiciona uma nova linha (nunca sobrescreve)
-- Compartilhada: mesma empresa analisada por perfis diferentes usa a mesma memória
-- TTL da memória: 90 dias — análise mais antiga que 90 dias aciona re-análise automática
-
-### 4 tabelas Supabase
-| Tabela | Propósito |
-|--------|-----------|
-| `asset_prices` | Série histórica de preços — nunca deletar, só acumular |
-| `asset_cache` | Dados fundamentais com TTL (DRE, balanço, indicadores, escritura, notícias) |
-| `asset_memory` | Análises geradas pelo agente (tese, rating, métricas) — versionada |
-| `asset_track_record` | Previsões vs resultados reais (preço alvo × preço realizado) |
-
-### TTLs do asset_cache
-| Tipo de dado | TTL |
-|-------------|-----|
-| DRE/Balanço/DFC trimestral | 90 dias |
-| DRE/Balanço/DFC anual | 365 dias |
-| Escritura de debênture | 180 dias |
-| Análise setorial | 30 dias |
-| Notícias | 3 dias |
-| Indicadores (P/L, ROE, etc.) | 1 dia |
-
-### Fontes de dados — ordem de fallback
-- **Preços**: Yahoo Finance → Brapi
-- **Financials**: Dados de Mercado API (`dadosdemercado.com.br/api/v1`) → CVM Dados Abertos
-- **Indicadores**: Dados de Mercado → Fundamentus (via proxy server)
-- **Debêntures**: ANBIMA → debentures.com.br → escritura em PDF
-- **Setor e notícias**: Claude API com `web_search` tool
-
-### Claude API
-- Proxy server-side: `api/claude.js` (Vercel serverless)
-- Variável de ambiente necessária: `ANTHROPIC_API_KEY` no Vercel
-- Modelo: `claude-opus-4-5`
-- Respostas sempre em JSON; fallback regex se `JSON.parse` falhar
-
-### Como testar (browser console)
-```javascript
-// Analisar uma ação
-FA.analyzeAsset('BBDC3', { forceRefresh: true }).then(r => console.log(r))
-
-// Analisar debênture (ISIN)
-FA.analyzeAsset('BRVALEACNOR0').then(r => console.log(r))
-
-// Analisar carteira completa
-FA.analyzePortfolio().then(r => console.log(r))
-
-// Ver memória histórica de um ativo
-FA.memory.store.getHistory('VALE3').then(r => console.log(r))
-```
 
 ---
 
@@ -241,19 +158,17 @@ FA.memory.store.getHistory('VALE3').then(r => console.log(r))
 - [x] Classificação de transações: EXPENSE / INCOME / INVESTMENT / TRANSFER
 - [x] Evolução patrimonial real (RV × preço histórico + RF back-calc CDI + conta + USD)
 - [x] Cross-check de proventos Yahoo Finance × conta bancária Pluggy
-- [x] **Agente Fundamentalista**: análise de ações e crédito privado via Claude API
+- [x] Assessora IA: chat em linguagem natural com contexto completo da carteira
 
 ---
 
 ## Roadmap — próximas funcionalidades (em ordem de prioridade)
-1. **Chat com assessor IA** (Claude API — `advisor-agent.js`): conhece toda a carteira, responde em português, explica rentabilidade, sugere rebalanceamentos
-2. **Perfil de investidor** (suitability): prazo, objetivos, tolerância a risco — alimenta recomendações do assessor
-3. **Agente fundamentalista** (`fundamentals-agent.js`): para cada ação, busca DRE + balanço + concorrentes via Claude API, gera qualidade do negócio e preço alvo
-4. **Relatório diário por email** (`reports-agent.js` via Cowork/scheduled tasks): resumo da carteira, variações do dia, alertas
-5. **Alertas de variação** (`alerts-agent.js`): notifica quando ativo sobe/cai X%
-6. **Rentabilidade de títulos americanos**: conta XP International
-7. **Planejamento tributário**: isenção IR renda variável (vendas < R$20k/mês)
-8. **Simulador de aposentadoria**: projeção com aportes + taxa de retorno esperada
+1. **Perfil de investidor** (suitability): prazo, objetivos, tolerância a risco — alimenta recomendações da assessora
+2. **Relatório diário por email** (`reports-agent.js` via Cowork/scheduled tasks): resumo da carteira, variações do dia, alertas
+3. **Alertas de variação** (`alerts-agent.js`): notifica quando ativo sobe/cai X%
+4. **Rentabilidade de títulos americanos**: conta XP International
+5. **Planejamento tributário**: isenção IR renda variável (vendas < R$20k/mês)
+6. **Simulador de aposentadoria**: projeção com aportes + taxa de retorno esperada
 
 ---
 
