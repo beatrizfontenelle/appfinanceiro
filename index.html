@@ -30,6 +30,7 @@
     <button class="nav-item" onclick="go('alocacao',this)"><span class="ndot"></span>alocação</button>
     <button class="nav-item" onclick="go('acoes',this)"><span class="ndot"></span>custo médio</button>
     <div class="nav-group">análise</div>
+    <button class="nav-item" onclick="go('assessora',this)"><span class="ndot"></span>assessora IA</button>
     <button class="nav-item" onclick="go('fundamentalista',this)"><span class="ndot"></span>fundamentalista</button>
     <div class="sidebar-foot">
       <div class="sline" id="st-pl">—</div>
@@ -190,6 +191,32 @@
         </div>
       </section>
 
+      <!-- ── Assessora IA ───────────────────────────────── -->
+      <section id="s-assessora" class="sec">
+        <div class="chat-wrap">
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-welcome">
+              <div class="chat-welcome-icon">✦</div>
+              <div class="chat-welcome-title">Bia Assessora</div>
+              <div class="chat-welcome-sub">Sua assessora financeira com IA. Conheço toda a sua carteira em tempo real.<br>Pergunte sobre rentabilidade, alocação, benchmarks ou peça análise de um ativo.</div>
+              <div class="chat-suggestions">
+                <button class="chat-sug" onclick="chatSuggest(this)">Como está minha carteira hoje?</button>
+                <button class="chat-sug" onclick="chatSuggest(this)">Quais são meus maiores riscos?</button>
+                <button class="chat-sug" onclick="chatSuggest(this)">Comparo com o Ibovespa no ano?</button>
+                <button class="chat-sug" onclick="chatSuggest(this)">Analisa VALE3 pra mim</button>
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-wrap">
+            <button class="chat-clear" onclick="chatClear()" title="Limpar conversa">⟳</button>
+            <textarea id="chat-input" class="chat-input" placeholder="Pergunte sobre sua carteira..." rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend()}"
+              oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
+            <button class="chat-send" id="chat-send-btn" onclick="chatSend()">↑</button>
+          </div>
+        </div>
+      </section>
+
       <!-- ── Fundamentalista ─────────────────────────────── -->
       <section id="s-fundamentalista" class="sec">
         <!-- Upload card -->
@@ -271,6 +298,7 @@
 <script src="js/agents/fundamentalist/modes/equity.js?v=1"></script>
 <script src="js/agents/fundamentalist/modes/credit.js?v=1"></script>
 <script src="js/agents/fundamentalist/agent.js?v=1"></script>
+<script src="js/agents/advisor/agent.js?v=1"></script>
 <script src="js/charts.js?v=8"></script>
 <script src="js/render.js?v=8"></script>
 <script src="js/app.js?v=8"></script>
