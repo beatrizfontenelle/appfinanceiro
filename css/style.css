@@ -89,3 +89,43 @@ body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:1
 @keyframes spin{to{transform:rotate(360deg)}}.omsg{font-size:12px;color:var(--muted)}
 .empty{text-align:center;padding:2rem;color:var(--muted);font-size:12px}
 ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+
+/* ── Fundamentalist Agent ───────────────────────────────── */
+.fa-upload-card .fa-actions{display:flex;flex-direction:column;gap:1.25rem}
+.fa-action-block{display:flex;flex-direction:column;gap:.5rem}
+.fa-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.fa-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fa-input{font-family:var(--mono);font-size:12px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);outline:none;width:320px;max-width:100%}
+.fa-input:focus{border-color:var(--border2)}
+.fa-hint{font-size:11px;color:var(--muted2)}
+.fa-file-label{cursor:pointer;display:inline-flex;align-items:center}
+.fa-file-name{font-size:11px;color:var(--muted)}
+.btn-b{border-color:var(--b);color:var(--b)}.btn-b:hover{background:rgba(143,159,189,.1)}
+.fa-progress{display:flex;align-items:center;gap:.75rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.75rem 1.25rem;margin-bottom:1.5rem;font-size:12px;color:var(--muted)}
+.fa-progress.hidden{display:none}
+.spinner-sm{width:16px;height:16px;border:1px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+
+/* Analysis result cards */
+.fa-result{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.fa-result-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.fa-result-name{font-family:var(--serif);font-size:18px}
+.fa-result-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.fa-rating{font-size:11px;padding:4px 12px;border-radius:6px;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
+.fa-rating-comprar{background:rgba(143,189,143,.15);color:var(--g);border:1px solid rgba(143,189,143,.3)}
+.fa-rating-manter{background:rgba(200,185,122,.15);color:var(--accent);border:1px solid rgba(200,185,122,.3)}
+.fa-rating-reduzir{background:rgba(189,143,143,.15);color:var(--r);border:1px solid rgba(189,143,143,.3)}
+.fa-rating-vender{background:rgba(189,100,100,.2);color:#e08080;border:1px solid rgba(189,100,100,.3)}
+.fa-rating-credit{background:rgba(143,159,189,.15);color:var(--b);border:1px solid rgba(143,159,189,.3)}
+.fa-thesis{font-size:12px;color:var(--muted);line-height:1.8;margin:1rem 0;padding:1rem;background:var(--bg3);border-radius:8px}
+.fa-metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin:.75rem 0}
+.fa-metric{background:var(--bg3);padding:.65rem .85rem}
+.fa-metric-l{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted2);margin-bottom:4px}
+.fa-metric-v{font-size:13px;font-family:var(--mono)}
+.fa-lists{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:.75rem 0}
+.fa-list-title{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.5rem}
+.fa-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+.fa-list li{font-size:11px;color:var(--muted);padding-left:12px;position:relative;line-height:1.5}
+.fa-list li::before{content:'·';position:absolute;left:0;color:var(--accent)}
+.fa-cached-badge{display:inline-block;font-size:9px;padding:2px 7px;border-radius:4px;background:var(--bg4);color:var(--muted2);margin-left:8px}
+.fa-target{font-size:12px;color:var(--text);margin-top:.5rem}
+.fa-target b{color:var(--accent)}

@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="css/style.css?v=8">
 <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
+<script>window.pdfjsLib = null; import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs').then(m => { window.pdfjsLib = m; m.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs'; });</script>
 </head>
 <body>
 <div id="overlay" class="overlay"><div class="spinner"></div><div class="omsg" id="omsg">iniciando...</div></div>
@@ -27,6 +29,8 @@
     <button class="nav-item" onclick="go('proventos',this)"><span class="ndot"></span>proventos</button>
     <button class="nav-item" onclick="go('alocacao',this)"><span class="ndot"></span>alocação</button>
     <button class="nav-item" onclick="go('acoes',this)"><span class="ndot"></span>custo médio</button>
+    <div class="nav-group">análise</div>
+    <button class="nav-item" onclick="go('fundamentalista',this)"><span class="ndot"></span>fundamentalista</button>
     <div class="sidebar-foot">
       <div class="sline" id="st-pl">—</div>
       <div class="sline" id="st-br">—</div>
@@ -186,6 +190,60 @@
         </div>
       </section>
 
+      <!-- ── Fundamentalista ─────────────────────────────── -->
+      <section id="s-fundamentalista" class="sec">
+        <!-- Upload card -->
+        <div class="card fa-upload-card">
+          <div class="card-hd">Análise Fundamentalista <small>ações · crédito privado</small></div>
+          <div class="fa-actions">
+            <div class="fa-action-block">
+              <div class="fa-label">Analisar ativo específico</div>
+              <div class="fa-row">
+                <input type="text" id="fa-ticker-input" class="fa-input" placeholder="ex: PETR4, VALE3, BRVALEACNOR0" />
+                <button class="btn btn-a" onclick="faAnalyzeTicker()">Analisar</button>
+              </div>
+            </div>
+            <div class="fa-action-block">
+              <div class="fa-label">Importar extrato (PDF)</div>
+              <div class="fa-row">
+                <label class="btn btn-b fa-file-label">
+                  <input type="file" id="fa-pdf-input" accept=".pdf" onchange="faHandlePDF(this)" style="display:none">
+                  Selecionar PDF
+                </label>
+                <span class="fa-file-name" id="fa-file-name">nenhum arquivo</span>
+              </div>
+            </div>
+            <div class="fa-action-block">
+              <div class="fa-label">Analisar carteira completa</div>
+              <div class="fa-row">
+                <button class="btn btn-b" onclick="faAnalyzePortfolio()">Analisar carteira</button>
+                <span class="fa-hint">analisa todos os ativos do Pluggy</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress / status -->
+        <div id="fa-progress" class="fa-progress hidden">
+          <div class="spinner-sm"></div>
+          <span id="fa-progress-msg">iniciando...</span>
+        </div>
+
+        <!-- PDF assets preview -->
+        <div id="fa-pdf-preview" class="card hidden">
+          <div class="card-hd">Ativos encontrados no extrato <small id="fa-pdf-broker"></small></div>
+          <table class="tbl"><thead><tr><th>ticker</th><th>nome</th><th>tipo</th><th>qtd</th><th>PM</th><th>valor</th><th>confiança</th><th></th></tr></thead>
+          <tbody id="fa-pdf-tb"></tbody></table>
+          <div style="margin-top:1rem;display:flex;gap:8px">
+            <button class="btn btn-a" onclick="faConfirmPDF()">Confirmar e analisar tudo</button>
+            <button class="btn btn-b" onclick="document.getElementById('fa-pdf-preview').classList.add('hidden')">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Analysis results -->
+        <div id="fa-results"></div>
+      </section>
+
     </div>
   </div>
 </div>
@@ -199,6 +257,20 @@
 <script src="js/tasks/calculations.js?v=8"></script>
 <script src="js/tasks/merchants.js?v=8"></script>
 <script src="js/agents/data-agent.js?v=8"></script>
+<!-- Fundamentalist Agent — load order matters -->
+<script src="js/agents/fundamentalist/tasks/identify.js?v=1"></script>
+<script src="js/agents/fundamentalist/tasks/cache.js?v=1"></script>
+<script src="js/agents/fundamentalist/tasks/prices.js?v=1"></script>
+<script src="js/agents/fundamentalist/tasks/financials-cvm.js?v=1"></script>
+<script src="js/agents/fundamentalist/tasks/indicators.js?v=1"></script>
+<script src="js/agents/fundamentalist/tasks/debenture-data.js?v=1"></script>
+<script src="js/agents/fundamentalist/tasks/sector.js?v=1"></script>
+<script src="js/agents/fundamentalist/tasks/news.js?v=1"></script>
+<script src="js/agents/fundamentalist/memory/store.js?v=1"></script>
+<script src="js/agents/fundamentalist/parsers/pdf-statement.js?v=1"></script>
+<script src="js/agents/fundamentalist/modes/equity.js?v=1"></script>
+<script src="js/agents/fundamentalist/modes/credit.js?v=1"></script>
+<script src="js/agents/fundamentalist/agent.js?v=1"></script>
 <script src="js/charts.js?v=8"></script>
 <script src="js/render.js?v=8"></script>
 <script src="js/app.js?v=8"></script>
